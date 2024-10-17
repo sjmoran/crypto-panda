@@ -1,5 +1,5 @@
 
-# Cryptocurrency Analysis and Reporting Tool
+# Crypto-Panda: Cryptocurrency Analysis and Reporting Tool
 
 <img src="./images/crypto_panda_trading.png" alt="Crypto Panda Trading" width="50%"/>
 
@@ -51,7 +51,7 @@ The following environment variables must be set:
 
 4. Run the script:
     ```bash
-    python monitor_coins.py
+    python monitor.py
     ```
 
 ## Usage
