@@ -5,7 +5,7 @@ from fuzzywuzzy import fuzz
 from helpers import calculate_price_change, calculate_volume_change
 from config import (  # Importing relevant constants from the config file
     HIGH_VOLATILITY_THRESHOLD, MEDIUM_VOLATILITY_THRESHOLD,
-    surge_words, FEAR_GREED_THRESHOLD,LOW_VOLUME_THRESHOLD_LARGE, analyzer
+    surge_words, FEAR_GREED_THRESHOLD,LOW_VOLUME_THRESHOLD_LARGE, LOW_VOLUME_THRESHOLD_MID, LOW_VOLUME_THRESHOLD_SMALL, analyzer
 )
 from helpers import filter_active_and_ranked_coins
 from datetime import datetime, timedelta
