@@ -14,6 +14,7 @@ import os
 import re
 import pandas as pd
 import datetime 
+import traceback
 from datetime import datetime, timedelta
 from config import COIN_PAPRIKA_API_KEY
 from coinpaprika import client as Coinpaprika

@@ -14,91 +14,6 @@ import json
 import openai
 import re
 
-def gpt4o_analyze_and_recommend(df):
-    """
-    Uses GPT-4o to analyze the final results DataFrame and provide structured recommendations for coin purchases.
-
-    Parameters:
-        df (pd.DataFrame): The final DataFrame containing coin analysis results.
-
-    Returns:
-        dict: A structured summary of GPT-4o's recommendations for coin purchases, including reasons.
-    """
-    # Convert the entire DataFrame to a JSON format for GPT-4o input
-    df_json = df.to_dict(orient='records')
-
-    # Adjust the prompt to request structured JSON output
-    prompt = f"""
-    You are provided with detailed analysis data for several cryptocurrency coins. Using this data, provide a concise summary of which coins should be considered for purchase, along with the reasons for the recommendation. Only consider coins that have a potential of a breakout or a surge in value.
-
-    **Do not repeat or summarize the dataset.** Instead, return the recommendations in structured JSON format with each recommended coin and give a detailed reason for your recommendation based on the market data you have been given.
-
-    Format your response as follows:
-    {{
-        "recommendations": [
-            {{
-                "coin": "Coin Name",
-                "liquidity_risk": "Low/Medium/High",
-                "cumulative_score": "Score Value",
-                "reason": "A fluent and detailed reason for recommendation anchored in the data you have been provided."
-            }},
-            ...
-        ]
-    }}
-
-    Here is the data for your analysis:
-    {json.dumps(df_json, indent=2)}
-    """
-
-    try:
-        # Call the OpenAI API to generate recommendations
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            n=1,
-            max_tokens=4000,
-            stop=None,
-            temperature=0.1
-        )
-
-        # Extract the response content (the actual GPT output text)
-        gpt_message_content = response['choices'][0]['message']['content']
-
-        # Log the GPT response for debugging
-        logging.debug("Response_content: " + gpt_message_content)
-        
-        # Extract the JSON part using regex
-        json_match = re.search(r'```json(.*?)```', gpt_message_content, re.DOTALL)
-
-        # Check if JSON part is found and not empty
-        if json_match:
-            json_content = json_match.group(1).strip()
-
-            # Check if the extracted content is empty
-            if not json_content:
-                logging.debug("Error: JSON content is empty.")
-            else:
-                # Try to parse the JSON content
-                try:
-                    parsed_data = json.loads(json_content)
-                    logging.debug("Parsed JSON data:", parsed_data)
-                except json.JSONDecodeError as e:
-                    logging.debug(f"Failed to parse JSON: {e}")
-        else:
-            logging.debug("No JSON found in the log message.")
-     
-        # Check if the 'recommendations' field is empty
-        if not parsed_data['recommendations']:
-            logging.debug("No recommendations found in the response.")
-        else:
-            logging.debug(f"Recommendations found: {parsed_data['recommendations']}")
-
-        return parsed_data
-
-    except (openai.error.OpenAIError, json.JSONDecodeError) as e:
-        logging.debug(f"Error in GPT-4o analysis: {e}")
-        return {"recommendations": []}
-
 def analyze_volume_change(volume_data, market_cap, volatility):
     """
     Analyze the volume changes of a cryptocurrency over three time periods.
@@ -348,7 +263,7 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     )
 
     # Maximum possible score (adjust as necessary)
-    max_possible_score = 13
+    max_possible_score = 14
 
     # Calculate the cumulative score as a percentage
     cumulative_score_percentage = (cumulative_score / max_possible_score) * 100

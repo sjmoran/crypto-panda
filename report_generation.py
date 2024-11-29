@@ -17,7 +17,8 @@ import re
 import json
 from email.mime.application import MIMEApplication
 import traceback
-
+import glob
+from api_clients import api_call_with_retries
 
 def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations, plot_image_path='top_coins_plot.png'):
     """
@@ -34,13 +35,16 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
     """
     
     # Sundown Digest Summary section
-    digest_items = ''.join(f'<li style="font-size:14px;line-height:1.6;">{item}</li>' for item in digest_summary['surge_summary'])
+    digest_items = ''.join(f'<li style="font-size:14px;line-height:1.6;">{item}</li>' 
+                           for item in digest_summary.get('surge_summary', [])) if digest_summary else ''
+    tickers = ', '.join(digest_summary.get('tickers', [])) if digest_summary else 'N/A'
+
     digest_html = f"""
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff;">
         <tr>
             <td style="padding:20px;">
                 <h3 style="font-size:20px;color:#2a9d8f;margin-bottom:10px;">Sundown Digest Summary</h3>
-                <p style="font-size:14px;line-height:1.6;"><strong>Tickers Mentioned:</strong> {', '.join(digest_summary['tickers'])}</p>
+                <p style="font-size:14px;line-height:1.6;"><strong>Tickers Mentioned:</strong> {tickers}</p>
                 <p style="font-size:14px;line-height:1.6;"><strong>News Summary:</strong></p>
                 <ul style="list-style-type:disc;padding-left:20px;margin:0;">
                     {digest_items}
@@ -50,8 +54,17 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
     </table>
     """
 
+    # Color Explanation
+    color_explanation = """
+    <p style="font-size:14px;line-height:1.6;">
+        <strong>Color Meaning:</strong><br>
+        <span style="background-color:#d4edda;padding:2px 5px;border-radius:3px;">Green</span>: Indicates coins expected to surge or break out.<br>
+        <span style="background-color:#ffe5b4;padding:2px 5px;border-radius:3px;">Orange</span>: Indicates coins not expected to surge.
+    </p>
+    """
+
     # AI Recommendations Section
-    if not gpt_recommendations['recommendations']:
+    if not gpt_recommendations or not gpt_recommendations.get('recommendations'):
         recommendations_html = """
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff;">
             <tr>
@@ -71,13 +84,16 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
             
             # CoinPaprika URL format or other URL source can be used here
             coin_url = f"https://coinpaprika.com/coin/{matching_entry['coin_id']}/" if matching_entry else '#'
-            cumulative_score_percentage = matching_entry.get('cumulative_score_percentage', 'N/A')
+            cumulative_score_percentage = matching_entry.get('cumulative_score_percentage', 'N/A') if matching_entry else 'N/A'
+
+            # Determine background color based on expected surge status
+            background_color = "#d4edda" if item.get("expected_to_surge", 'Yes') else "#ffe5b4"
 
             # Capitalize each word in the coin name
             coin_name = item["coin"].title()
 
             recommendation_items += f"""
-            <li style="font-size:14px;line-height:1.6;margin-bottom:10px;">
+            <li style="font-size:14px;line-height:1.6;margin-bottom:10px;background-color:{background_color};padding:10px;border-radius:5px;">
                 <b>{coin_name}</b> - {item["reason"]}<br>
                 <strong>Cumulative Score Percentage:</strong> {cumulative_score_percentage}%<br>
                 <a href="{coin_url}" target="_blank" style="color:#0077cc;text-decoration:none;">More Info</a>
@@ -88,7 +104,8 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
             <tr>
                 <td style="padding:20px;">
                     <h3 style="font-size:20px;color:#2a9d8f;margin-bottom:10px;">AI Generated Coin Recommendations</h3>
-                    <p style="font-size:14px;line-height:1.6;"><strong>Meaning of Cumulative Score Percentage:</strong> a higher percentage indicates a stronger potential based on historical data and analysis. </p>
+                    {color_explanation}
+                    <p style="font-size:14px;line-height:1.6;"><strong>Meaning of Cumulative Score Percentage:</strong> a higher percentage indicates a stronger potential based on historical data and analysis.</p>
                     <ul style="list-style-type:disc;padding-left:20px;margin:0;">
                         {recommendation_items}
                     </ul>
@@ -149,6 +166,7 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
 
     return html_content
 
+
 def gpt4o_analyze_and_recommend(df):
     """
     Uses GPT-4o to analyze the final results DataFrame and provide structured recommendations for coin purchases.
@@ -159,14 +177,20 @@ def gpt4o_analyze_and_recommend(df):
     Returns:
         dict: A structured summary of GPT-4o's recommendations for coin purchases, including reasons.
     """
-    # Convert the entire DataFrame to a JSON format for GPT-4o input
+    # Convert DataFrame to JSON for input
     df_json = df.to_dict(orient='records')
 
-    # Adjust the prompt to request structured JSON output
+    # Prepare prompt
     prompt = f"""
-    You are provided with detailed analysis data for several cryptocurrency coins. Using this data, provide a concise summary of which coins should be considered for purchase, along with the reasons for the recommendation. Only consider coins that have a potential of a breakout or a surge in value.
+    You are provided with detailed analysis data for several cryptocurrency coins. Using this data, evaluate each coin individually and provide a recommendation on whether it should be considered for purchase based on the potential for a breakout or surge in value.
 
-    **Do not repeat or summarize the dataset.** Instead, return the recommendations in structured JSON format with each recommended coin and give a detailed reason for your recommendation based on the market data you have been given.
+    **Key requirements:**
+    1. If the analysis indicates a surge or breakout potential for a coin, the recommendation must always be "Yes". Ensure this is clearly stated and supported by the data.
+    2. If a coin does not show immediate potential, include it in the output with a detailed explanation, and the recommendation must be "No". Ensure the reasoning reflects the lack of a surge or breakout potential and is grounded in the data.
+
+    **Do not repeat or summarize the dataset.** Instead, return the recommendations in structured JSON format for each coin, whether recommended for purchase or not, with clear reasoning for your recommendation based on the data.
+
+    Ensure the explanation explicitly references key factors from the data, such as liquidity risk, cumulative score, sentiment, or other relevant metrics, to justify the recommendation.
 
     Format your response as follows:
     {{
@@ -175,7 +199,8 @@ def gpt4o_analyze_and_recommend(df):
                 "coin": "Coin Name",
                 "liquidity_risk": "Low/Medium/High",
                 "cumulative_score": "Score Value",
-                "reason": "A fluent and detailed reason for recommendation anchored in the data you have been provided."
+                "recommendation": "Yes/No",
+                "reason": "Provide a fluent, specific, and data-driven reason based on the analysis provided. Clearly explain why this coin is or is not recommended for purchase, citing relevant metrics or trends from the data."
             }},
             ...
         ]
@@ -185,70 +210,64 @@ def gpt4o_analyze_and_recommend(df):
     {json.dumps(df_json, indent=2)}
     """
 
-    try:
-        # Call the OpenAI API to generate recommendations
+    def api_call():
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             n=1,
-            max_tokens=4000,
             stop=None,
-            temperature=0.1
+            temperature=0.0
         )
+        return response
 
-        # Extract the response content (the actual GPT output text)
+    try:
+        # Call the API with retries
+        response = api_call_with_retries(api_call)
         gpt_message_content = response['choices'][0]['message']['content']
 
-        # Log the GPT response for debugging
-        logging.debug("Response_content: " + gpt_message_content)
-        
-        # Extract the JSON part using regex
+        # Extract JSON content from the response
         json_match = re.search(r'```json(.*?)```', gpt_message_content, re.DOTALL)
-
-        # Check if JSON part is found and not empty
         if json_match:
             json_content = json_match.group(1).strip()
+            parsed_data = json.loads(json_content)
+            logging.debug(f"Parsed JSON data: {parsed_data}")
+            return parsed_data
 
-            # Check if the extracted content is empty
-            if not json_content:
-                logging.debug("Error: JSON content is empty.")
-            else:
-                # Try to parse the JSON content
-                try:
-                    parsed_data = json.loads(json_content)
-                    logging.debug("Parsed JSON data:", parsed_data)
-                except json.JSONDecodeError as e:
-                    logging.debug(f"Failed to parse JSON: {e}")
-        else:
-            logging.debug("No JSON found in the log message.")
-     
-        # Check if the 'recommendations' field is empty
-        if not parsed_data['recommendations']:
-            logging.debug("No recommendations found in the response.")
-        else:
-            logging.debug(f"Recommendations found: {parsed_data['recommendations']}")
+        logging.debug("No JSON content found in the GPT response.")
+        return {"recommendations": []}
 
-        return parsed_data
-
-    except (openai.error.OpenAIError, json.JSONDecodeError) as e:
-        logging.debug(f"Error in GPT-4o analysis: {e}")
+    except Exception as e:
+        logging.error(f"Failed to complete GPT-4o analysis: {e}")
         return {"recommendations": []}
 
 def send_failure_email():
     """
     Sends an email with the current results when the script encounters an error.
-
-    This function reads the current results from the file specified by RESULTS_FILE,
-    generates an HTML email with the results and sends it to the recipient specified
-    by EMAIL_TO.
-
-    If the file does not exist, the email will state that no data is available.
-
-    The email is sent using the SMTP server specified by SMTP_SERVER and the
-    credentials specified by SMTP_USERNAME and SMTP_PASSWORD.
-
-    If sending the email fails, an error message is logging.debuged.
+    If no flag file for the current date exists, it deletes all previous flag files,
+    sends the email, and creates a flag file for today.
     """
+
+    # Get today's date in the format YYYY-MM-DD
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # Define the flag file path for today's date
+    flag_file = f"email_sent_{today}.flag"
+
+    # Check if the flag file for today already exists
+    if os.path.exists(flag_file):
+        logging.debug(f"Email already sent today ({today}). Skipping email.")
+        return  # Exit the function if email has already been sent today
+
+    # Delete all previous flag files if today's flag file does not exist
+    flag_files = glob.glob("email_sent_*.flag")
+    for file in flag_files:
+        try:
+            os.remove(file)
+            logging.debug(f"Deleted old flag file: {file}")
+        except Exception as e:
+            logging.debug(f"Failed to delete flag file {file}: {e}")
+
+    # Proceed to send the email if no flag file exists for today
     if os.path.exists(RESULTS_FILE):
         with open(RESULTS_FILE, 'r') as file:
             file_contents = file.read()
@@ -298,7 +317,8 @@ def send_failure_email():
     msg = MIMEMultipart('alternative')
     msg['Subject'] = "Failure in Weekly Coin Analysis Script"
     msg['From'] = EMAIL_FROM
-    msg['To'] = EMAIL_TO
+    #msg['To'] = EMAIL_TO
+    msg['Bcc'] = EMAIL_TO   # Add BCC field (replace EMAIL_BCC with your BCC email address)
 
     part = MIMEText(html_content, 'html')
     msg.attach(part)
@@ -307,8 +327,14 @@ def send_failure_email():
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
+            recipients = EMAIL_TO.split(",")  # Add BCC recipients to the send list
+            server.sendmail(EMAIL_FROM, recipients, msg.as_string())
         logging.debug("Failure email sent successfully.")
+
+        # Create today's flag file to avoid sending multiple emails
+        with open(flag_file, 'w') as f:
+            f.write("Email sent")
+
     except Exception as e:
         logging.debug(f"Failed to send email: {e}")
 
@@ -439,10 +465,9 @@ def gpt4o_summarize_digest_and_extract_tickers(digest_text):
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=400,
             n=1,
             stop=None,
-            temperature=0.7
+            temperature=0.0
         )
         
         # Extract the content of the response
@@ -529,7 +554,8 @@ def send_email_with_report(html_content, attachment_path, plot_image_path='top_c
         msg = MIMEMultipart('related')  # 'related' allows attaching both HTML and images
         msg['Subject'] = "AI Generated Coin Analysis Report"
         msg['From'] = EMAIL_FROM
-        msg['To'] = EMAIL_TO
+        #msg['To'] = EMAIL_TO
+        msg['Bcc'] = EMAIL_TO  # Add BCC field (replace EMAIL_BCC with your BCC email address)
 
         # Attach HTML content
         part = MIMEText(html_content, 'html')
@@ -566,7 +592,8 @@ def send_email_with_report(html_content, attachment_path, plot_image_path='top_c
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
                 server.starttls()
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                server.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
+                recipients = EMAIL_TO.split(",")   # Add BCC recipients to the send list
+                server.sendmail(EMAIL_FROM, recipients, msg.as_string())
             logging.debug("Email sent successfully.")
         except Exception as e:
             logging.error(f"Error sending email: {e}")

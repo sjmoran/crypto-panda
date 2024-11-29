@@ -6,7 +6,7 @@ from datetime import datetime
 from api_clients import (
     get_sundown_digest,
     fetch_trending_coins_scores,
-    fetch_news_for_past_week
+    fetch_news_for_past_week,
 )
 from coin_analysis import analyze_coin
 from data_management import (
@@ -16,16 +16,13 @@ from data_management import (
     create_coin_data_table_if_not_exists
 )
 from plotting import plot_top_coins_over_time
-from report_generation import save_report_to_excel, summarize_sundown_digest, generate_html_report_with_recommendations, send_email_with_report
+from report_generation import gpt4o_analyze_and_recommend,save_report_to_excel, summarize_sundown_digest, generate_html_report_with_recommendations, send_email_with_report
 from config import (
     TEST_ONLY,
     CUMULATIVE_SCORE_REPORTING_THRESHOLD,
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
     TEST_ONLY
-)
-from coin_analysis import (
-    gpt4o_analyze_and_recommend
 )
 
 import re  # Add the missing import for regular expressions
@@ -151,7 +148,7 @@ def monitor_coins_and_send_report():
 
                 if not historical_data.empty:
                     # Filter the historical data for only the coins present in the filtered df
-                    plot_top_coins_over_time(historical_data[historical_data['coin_name'].isin(coins_in_df)], top_n=len(coins_in_df))
+                    plot_top_coins_over_time(historical_data[historical_data['coin_name'].isin(coins_in_df)], top_n=10)
 
             # Proceed with sorting and generating the report
             report_entries = df.to_dict('records')

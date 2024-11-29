@@ -85,9 +85,9 @@ def calculate_volume_change(volume_data, period="short", span=7):
     return (end_volume - start_volume) / start_volume
 
 
-def filter_active_and_ranked_coins(coins, max_coins, rank_threshold=1000):
+def filter_active_and_ranked_coins(coins, max_coins=250, rank_threshold=1000):
     """
-    Filters the list of coins by rank, activity status, and new status, selecting up to max_coins.
+    Filters the list of coins to focus on the bottom-ranked coins, selecting up to max_coins.
 
     Parameters:
         coins (list): List of coins with rank, activity status, and new status information.
@@ -95,10 +95,16 @@ def filter_active_and_ranked_coins(coins, max_coins, rank_threshold=1000):
         rank_threshold (int): The maximum rank a coin must have to be included (e.g., rank <= 1000).
 
     Returns:
-        list: Filtered list of coins that are active, not new, and ranked within the rank_threshold.
+        list: Filtered list of coins that are active, not new, and ranked within the bottom of the rank_threshold.
     """
     # Filter out coins that are not active, are new, or have a rank above the rank_threshold
-    active_ranked_coins = [coin for coin in coins if coin.get('is_active', False) and not coin.get('is_new', True) and coin.get('rank', None) <= rank_threshold]
+    active_ranked_coins = [
+        coin for coin in coins
+        if coin.get('is_active', False)
+        and not coin.get('is_new', True)
+        and rank_threshold - max_coins < coin.get('rank', None) <= rank_threshold
+    ]
 
     # Limit the list to max_coins
     return active_ranked_coins[:max_coins]
+

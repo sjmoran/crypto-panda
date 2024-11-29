@@ -41,7 +41,7 @@ CRYPTO_NEWS_TICKERS = "tickers.csv"
 FEAR_GREED_THRESHOLD = 60  # Fear and Greed index threshold
 HIGH_VOLATILITY_THRESHOLD = 0.05  # 5% volatility is considered high
 MEDIUM_VOLATILITY_THRESHOLD = 0.02  # 2% volatility is considered medium
-NUMBER_OF_TOP_COINS_TO_MONITOR = 50
+NUMBER_OF_TOP_COINS_TO_MONITOR = 1000
 
 # Testing and retries
 TEST_ONLY = False  # Set to False to monitor all coins
@@ -49,7 +49,7 @@ MAX_RETRIES = 2  # Maximum number of retries for API calls
 BACKOFF_FACTOR = 2  # Factor by which the wait time increases after each failure
 
 # Reporting
-CUMULATIVE_SCORE_REPORTING_THRESHOLD = 50  # Only report results with cumulative score above this % value
+CUMULATIVE_SCORE_REPORTING_THRESHOLD = 70  # Only report results with cumulative score above this % value
 
 AURORA_HOST = os.getenv('AURORA_HOST')  # Make sure this points to the correct server
 AURORA_PORT = os.getenv('AURORA_PORT', 5432)  # Ensure the port is correct (default is 5432)
