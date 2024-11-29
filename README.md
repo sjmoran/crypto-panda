@@ -15,6 +15,12 @@ This project is a Python-based automated tool for monitoring, analyzing, and rep
 - **Email Reporting**: Automatically generates and sends a detailed HTML report, including GPT-4o recommendations, to a specified email address.
 - **Retry Mechanism**: Implements a robust retry mechanism for API calls to handle temporary failures.
 
+## Example E-mail Report
+
+The report contains AI-generated recommendations of coins to watch based on historical performance and news sentiment, all encapsulated in the novel cumulative surge score:
+
+<img src="./images/example_report.png" alt="AI Generated Crypto Coin Report" width="50%"/>
+
 ## Requirements
 
 - Python 3.x
