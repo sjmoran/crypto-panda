@@ -49,7 +49,7 @@ MAX_RETRIES = 2  # Maximum number of retries for API calls
 BACKOFF_FACTOR = 2  # Factor by which the wait time increases after each failure
 
 # Reporting
-CUMULATIVE_SCORE_REPORTING_THRESHOLD = 70  # Only report results with cumulative score above this % value
+CUMULATIVE_SCORE_REPORTING_THRESHOLD = 50  # Only report results with cumulative score above this % value
 
 AURORA_HOST = os.getenv('AURORA_HOST')  # Make sure this points to the correct server
 AURORA_PORT = os.getenv('AURORA_PORT', 5432)  # Ensure the port is correct (default is 5432)

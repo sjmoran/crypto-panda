@@ -102,7 +102,7 @@ def filter_active_and_ranked_coins(coins, max_coins=250, rank_threshold=1000):
         coin for coin in coins
         if coin.get('is_active', False)
         and not coin.get('is_new', True)
-        and rank_threshold - max_coins < coin.get('rank', None) <= rank_threshold
+        and 1 <= coin.get('rank', None) <= max_coins
     ]
 
     # Limit the list to max_coins
