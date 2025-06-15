@@ -22,7 +22,8 @@ from config import (
     CUMULATIVE_SCORE_REPORTING_THRESHOLD,
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
-    TEST_ONLY
+    TEST_ONLY,
+    LOG_DIR
 )
 
 import re  # Add the missing import for regular expressions
@@ -48,7 +49,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',  # Customize log format
     handlers=[
         logging.StreamHandler(),  # Log to console
-        logging.FileHandler('crypto-panda.log', mode='w')  # Log to a file (optional)
+        logging.FileHandler(LOG_DIR+'/crypto-panda.log', mode='w')  # Log to a file (optional)
     ]
 )
 
@@ -175,7 +176,7 @@ def monitor_coins_and_send_report():
 
             # Delete the results CSV file after sending the email
             current_date = datetime.now().strftime("%Y-%m-%d")
-            results_file = f"results_{current_date}.csv"
+            results_file = LOG_DIR+f"/results_{current_date}.csv"
 
             if os.path.exists(results_file):
                 try:

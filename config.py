@@ -34,14 +34,14 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = 587
 
 # Files and Tickers
-RESULTS_FILE = "surging_coins.csv"
-CRYPTO_NEWS_TICKERS = "tickers.csv"
+RESULTS_FILE = "../data/surging_coins.csv"
+CRYPTO_NEWS_TICKERS = "../data/tickers.csv"
 
 # Score thresholds
 FEAR_GREED_THRESHOLD = 60  # Fear and Greed index threshold
 HIGH_VOLATILITY_THRESHOLD = 0.05  # 5% volatility is considered high
 MEDIUM_VOLATILITY_THRESHOLD = 0.02  # 2% volatility is considered medium
-NUMBER_OF_TOP_COINS_TO_MONITOR = 1000
+NUMBER_OF_TOP_COINS_TO_MONITOR = 25
 
 # Testing and retries
 TEST_ONLY = False  # Set to False to monitor all coins
@@ -57,6 +57,7 @@ AURORA_DB = os.getenv('AURORA_DB')
 AURORA_USER = os.getenv('AURORA_USER')
 AURORA_PASSWORD = os.getenv('AURORA_PASSWORD')
 
+LOG_DIR='../logs/'
 COIN_PAPRIKA_API_KEY=os.getenv('COIN_PAPRIKA_API_KEY')
 
 # Initialize the VADER sentiment analyzer
