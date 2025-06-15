@@ -182,29 +182,29 @@ def gpt4o_analyze_and_recommend(df):
 
     # Prepare prompt
     prompt = f"""
-    You are provided with detailed analysis data for several cryptocurrency coins. Using this data, evaluate each coin individually and provide a recommendation on whether it should be considered for purchase based on the potential for a breakout or surge in value.
+        You are provided with detailed analysis data for several cryptocurrency coins. Using this data, evaluate each coin individually and provide a recommendation on whether it should be considered for purchase based on the potential for a breakout or surge in value.
 
-    **Key requirements:**
-    1. If the analysis indicates a surge or breakout potential for a coin, the recommendation must always be "Yes". Ensure this is clearly stated and supported by the data.
-    2. If a coin does not show immediate potential, include it in the output with a detailed explanation, and the recommendation must be "No". Ensure the reasoning reflects the lack of a surge or breakout potential and is grounded in the data.
+        **Key requirements:**
+        1. Only recommend a coin for purchase (i.e., "recommendation": "Yes") if there is a **clear and strong indication** of breakout or surge potential in the data. The reasoning must clearly and specifically justify this based on relevant metrics.
+        2. If the coin does not show clear signs of immediate surge or breakout potential, set "recommendation" to "No" and explain why in detail.
+        3. Do **not infer** surge potential from vague or weak signals. Only assign "Yes" if the evidence is solid and explicitly supports it.
+        4. Avoid recommending coins unless you can confidently support the decision using concrete factors such as liquidity risk, cumulative score, sentiment score, volume, price trends, or similar indicators.
 
-    **Do not repeat or summarize the dataset.** Instead, return the recommendations in structured JSON format for each coin, whether recommended for purchase or not, with clear reasoning for your recommendation based on the data.
+        **Do not repeat or summarize the dataset.** Instead, return structured JSON recommendations for each coin with a clear, specific, and data-grounded explanation.
 
-    Ensure the explanation explicitly references key factors from the data, such as liquidity risk, cumulative score, sentiment, or other relevant metrics, to justify the recommendation.
-
-    Format your response as follows:
-    {{
-        "recommendations": [
-            {{
-                "coin": "Coin Name",
-                "liquidity_risk": "Low/Medium/High",
-                "cumulative_score": "Score Value",
-                "recommendation": "Yes/No",
-                "reason": "Provide a fluent, specific, and data-driven reason based on the analysis provided. Clearly explain why this coin is or is not recommended for purchase, citing relevant metrics or trends from the data."
-            }},
-            ...
-        ]
-    }}
+        Format your response as follows:
+        {{
+            "recommendations": [
+                {{
+                    "coin": "Coin Name",
+                    "liquidity_risk": "Low/Medium/High",
+                    "cumulative_score": "Score Value",
+                    "recommendation": "Yes/No",
+                    "reason": "Provide a fluent, specific, and data-driven reason based on the analysis provided. Clearly explain why this coin is or is not recommended for purchase, citing relevant metrics or trends from the data."
+                }},
+                ...
+            ]
+        }}
 
     Here is the data for your analysis:
     {json.dumps(df_json, indent=2)}
