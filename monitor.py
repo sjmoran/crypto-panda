@@ -49,7 +49,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',  # Customize log format
     handlers=[
         logging.StreamHandler(),  # Log to console
-        logging.FileHandler(LOG_DIR+'../logs/crypto-panda.log', mode='w')  # Log to a file (optional)
+        logging.FileHandler(LOG_DIR+'/crypto-panda.log', mode='w')  # Log to a file (optional)
     ]
 )
 
