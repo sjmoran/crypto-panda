@@ -3,6 +3,7 @@
 top_21_coins_historical_news.csv
 deploy.yaml
 lambda.py
+.git
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

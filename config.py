@@ -8,6 +8,8 @@ load_dotenv()
 # Initialize Sanpy API key
 SAN_API_KEY = os.getenv('SAN_API_KEY')
 
+LOG_DIR='../logs/'
+
 # Surge-related words
 surge_words = [
     "surge", "spike", "soar", "rocket", "skyrocket", "rally", "boom", "bullish", 
@@ -34,8 +36,8 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = 587
 
 # Files and Tickers
-RESULTS_FILE = "../data/surging_coins.csv"
-CRYPTO_NEWS_TICKERS = "../data/tickers.csv"
+RESULTS_FILE = LOG_DIR + "/surging_coins.csv"
+CRYPTO_NEWS_TICKERS = LOG_DIR + "/data/tickers.csv"
 
 # Score thresholds
 FEAR_GREED_THRESHOLD = 60  # Fear and Greed index threshold
@@ -57,7 +59,6 @@ AURORA_DB = os.getenv('AURORA_DB')
 AURORA_USER = os.getenv('AURORA_USER')
 AURORA_PASSWORD = os.getenv('AURORA_PASSWORD')
 
-LOG_DIR='../logs/'
 COIN_PAPRIKA_API_KEY=os.getenv('COIN_PAPRIKA_API_KEY')
 
 # Initialize the VADER sentiment analyzer
