@@ -1,10 +1,9 @@
+# 🐼 Crypto-Panda: Cryptocurrency Analysis and Reporting Tool
 
-# Crypto-Panda: Cryptocurrency Analysis and Reporting Tool
-
-[![Website](https://img.shields.io/badge/Live%20Demo-Not%20Available-lightgrey)]()
+[![GitHub Repo](https://img.shields.io/badge/GitHub-sjmoran%2Fcrypto--panda-blue?logo=github)](https://github.com/sjmoran/crypto-panda)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC--BY--NC%204.0-orange)](https://creativecommons.org/licenses/by-nc/4.0/)
-[![Stars](https://img.shields.io/github/stars/yourusername/crypto-panda?style=social)](https://github.com/yourusername/crypto-panda/stargazers)
-[![Issues](https://img.shields.io/github/issues/yourusername/crypto-panda)](https://github.com/yourusername/crypto-panda/issues)
+[![Stars](https://img.shields.io/github/stars/sjmoran/crypto-panda?style=social)](https://github.com/sjmoran/crypto-panda/stargazers)
+[![Issues](https://img.shields.io/github/issues/sjmoran/crypto-panda)](https://github.com/sjmoran/crypto-panda/issues)
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 
 <img src="./images/crypto_panda_trading.png" alt="Crypto Panda Trading" width="50%"/>
