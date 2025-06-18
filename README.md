@@ -1,4 +1,5 @@
-# 🐼 Crypto-Panda: Cryptocurrency Analysis and Reporting Tool
+
+# 🐼 Crypto-Panda: Cryptocurrency Analysis & Reporting Tool
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-sjmoran%2Fcrypto--panda-blue?logo=github)](https://github.com/sjmoran/crypto-panda)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC--BY--NC%204.0-orange)](https://creativecommons.org/licenses/by-nc/4.0/)
@@ -10,140 +11,161 @@
 
 ---
 
-This project is a Python-based automated tool for monitoring, analyzing, and reporting on cryptocurrency market trends. The script fetches market data, analyzes trends, sentiment, and potential surges using various APIs, and generates a detailed weekly report which is then sent via email.
+## 🔍 What is Crypto-Panda?
 
-## Features
+**Crypto-Panda** is a smart, automated reporting tool that tracks the cryptocurrency market, analyzes patterns using both quantitative signals and AI, and emails you a weekly report on the coins worth watching.
 
-- **Market Data Analysis**: Integrates with the CoinPaprika API to fetch and analyze historical cryptocurrency data.
-- **Santiment Data Integration**: Uses Santiment API to track development activity, daily active addresses, and other key metrics for cryptocurrencies.
-- **Sentiment Analysis**: Uses the VADER sentiment analysis tool and GPT-4o for analyzing news and social media sentiment.
-- **Surge Detection**: Detects potential surges in cryptocurrency prices and trading volumes by analyzing trends and historical data.
-- **GPT-4o Recommendations**: Leverages GPT-4o to generate investment recommendations based on all collected data, including market analysis, sentiment scores, and Santiment data.
-- **Email Reporting**: Automatically generates and sends a detailed HTML report, including GPT-4o recommendations, to a specified email address.
-- **Retry Mechanism**: Implements a robust retry mechanism for API calls to handle temporary failures.
+Powered by Python, OpenAI's GPT-4o, Santiment, and CoinPaprika APIs — it's designed to help you cut through the noise and make sense of the chaos.
 
 ---
-## Example E-mail Report
 
-The report contains AI-generated recommendations of coins to watch based on historical performance and news sentiment, all encapsulated in the novel cumulative surge score:
+## 🧠 What It Can Do
+
+- 📈 **Market Trend Analysis**  
+  Pulls historical price/volume data via CoinPaprika and analyzes short- and long-term trends.
+
+- 🧪 **Santiment Intelligence**  
+  Tracks developer activity, daily active addresses, and other on-chain signals.
+
+- 📰 **News & Social Sentiment**  
+  Uses VADER and GPT-4o to extract sentiment from headlines and social chatter.
+
+- 🚀 **Surge Detection**  
+  Uses a composite scoring mechanism to flag coins with breakout potential.
+
+- 🤖 **GPT-4o Investment Suggestions**  
+  Generates natural-language investment suggestions from raw data.
+
+- 📬 **Weekly HTML Report by Email**  
+  Fully automated and ready for inboxes.
+
+- 🔁 **Reliable API Access**  
+  Includes built-in retry handling for flaky requests.
+
+---
+
+## 📬 Example Report
+
+Each weekly email includes top-ranked coins and GPT-generated insights:
 
 <img src="./images/example_report.png" alt="AI Generated Crypto Coin Report" width="50%"/>
 
 ---
-## Requirements
 
-- Python 3.x
-- Required Python packages are listed in the `requirements.txt`.
+## ⚙️ Requirements
 
----
-## Environment Variables
+- Python 3.8+
+- Install dependencies via:
 
-The following environment variables must be set:
-
-- `COIN_PAPRIKA_API_KEY`: API key for accessing CoinPaprika.
-- `OPENAI_API_KEY`: API key for accessing GPT-4o via OpenAI.
-- `CRYPTO_NEWS_API_KEY`: API key for fetching cryptocurrency news.
-- `SAN_API_KEY`: API key for accessing Santiment data.
-- `EMAIL_FROM`: The sender's email address for sending reports.
-- `EMAIL_TO`: The recipient's email address for receiving reports.
-- `SMTP_SERVER`: SMTP server address for sending emails.
-- `SMTP_USERNAME`: SMTP server username.
-- `SMTP_PASSWORD`: SMTP server password.
+```bash
+pip install -r requirements.txt
+```
 
 ---
-## Installation
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/your-repo-name.git
-    cd your-repo-name
-    ```
+## 🔐 Environment Variables
 
-2. Install the required Python packages:
-    ```bash
-    pip install -r requirements.txt
-    ```
+Create a `.env` file with the following:
 
-3. Create a `.env` file in the root directory of the project and add the necessary environment variables as described above.
-
-4. Run the script:
-    ```bash
-    python monitor.py
-    ```
+```env
+COIN_PAPRIKA_API_KEY=
+OPENAI_API_KEY=
+CRYPTO_NEWS_API_KEY=
+SAN_API_KEY=
+EMAIL_FROM=
+EMAIL_TO=
+SMTP_SERVER=
+SMTP_USERNAME=
+SMTP_PASSWORD=
+```
 
 ---
-## Usage
 
-The script is designed to run on a weekly schedule. It fetches and analyzes cryptocurrency data, then generates a report summarizing key trends, Santiment metrics, and insights. The report includes GPT-4o recommendations and is automatically sent to the specified email address.
+## 🚀 Quickstart
 
----
-## Configuration
+```bash
+git clone https://github.com/sjmoran/crypto-panda.git
+cd crypto-panda
+pip install -r requirements.txt
+python monitor.py
+```
 
-- **TEST_ONLY**: Set to `True` to test the script with a limited set of cryptocurrencies. Set to `False` for full functionality.
-- **RESULTS_FILE**: The filename where results will be saved before emailing.
-- **HIGH_VOLATILITY_THRESHOLD**: Threshold for considering a cryptocurrency highly volatile.
-- **FEAR_GREED_THRESHOLD**: The threshold for the Fear and Greed Index.
-- **CUMULATIVE_SCORE_REPORTING_THRESHOLD**: The minimum cumulative score a coin must achieve to be included in the report.
-
----
-## Santiment Data
-
-Santiment metrics integrated into the analysis:
-- **Development Activity**: Measures the development activity for each cryptocurrency, indicating how actively a project is being worked on.
-- **Daily Active Addresses**: Tracks the number of unique active addresses involved in cryptocurrency transactions, a useful metric for assessing network usage.
+> 💡 Run weekly via cron, Lambda, or EventBridge.
 
 ---
-## GPT-4o Recommendations
 
-The analysis incorporates GPT-4o to generate actionable insights and recommendations based on the collected data. This includes:
-- Market data from CoinPaprika.
-- Santiment metrics such as development activity and daily active addresses.
-- Sentiment analysis from news articles and social media.
+## ⚙️ Config Options
 
-The recommendations are based on the cumulative score of these metrics and provide insights into potential breakout cryptocurrencies.
-
----
-## Deployment
-
-A pattern that I have found successful to deploy an EC2 instance (t2.micro) using a CloudFormation script (to instantiate the VPC and subnets and the security groups and IAM roles). Then schedule via EventBridge an event to kick off a Lambda function that will invoke the script on the EC2 instance at a regular interval (I have chosen once a week).
-
-The EC2 is set to shutdown after 96 hours, with the lambda reviving the EC2 instance whenever a run of the script is needed. This keeps the costs down, however a t2.micro running continuously for month only costs around $8.
-
-Also note that you will incur some costs for access to the CoinPaprika and CryptoNews APIs, totalling around $100 a month. Both services have free tiers worth exploring initially, however any serious work may require a subscription.
-
-Finally, worth keeping in mind is that the tool takes around 20 hours to process 1000 coins, which is far from real time! This is mostly due to the wait times for the API access, and is an area that can be improved in future iterations.
+| Variable                                | Description                                    |
+|----------------------------------------|------------------------------------------------|
+| `TEST_ONLY`                             | Run on a small subset for testing              |
+| `RESULTS_FILE`                          | Output filename for saving results             |
+| `HIGH_VOLATILITY_THRESHOLD`            | Flag coins with high volatility                |
+| `FEAR_GREED_THRESHOLD`                 | Fear & Greed Index threshold                   |
+| `CUMULATIVE_SCORE_REPORTING_THRESHOLD` | Min score required to include coin in report   |
 
 ---
-## Contributing
 
-Contributions are welcome! Please fork this repository and submit a pull request with your changes.
+## 📊 Metrics Tracked (via Santiment)
 
----
-## Contact
-
-For questions or issues, please open an issue on GitHub.
-
----
-## Disclaimer
-
-This project is intended for educational and informational purposes only. The cryptocurrency market is highly volatile, and trading in cryptocurrencies involves significant risk. The predictions and signals generated by this script are based on historical data, sentiment analysis, and other factors, but they are not guaranteed to be accurate or profitable.
+- **Development Activity** – GitHub commit activity  
+- **Daily Active Addresses** – Network usage metrics  
+- **Sentiment Signals** – From media and social platforms  
+- **Price & Volume** – Historical performance data
 
 ---
-**Important:**
-- **Do not use this tool as financial advice.** Always perform your own research and consider consulting with a financial advisor before making any trading decisions.
-- **Use at your own risk.** The authors of this script are not responsible for any financial losses incurred while using this tool.
 
-By using this project, you acknowledge that you understand and agree to this disclaimer.
+## 🤖 GPT-4o Intelligence
 
----
-## License
-
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). For more details, see the [LICENSE](LICENSE) file.
+GPT-4o combines market, sentiment, and social signals to generate:
+- Natural-language investment briefs
+- Summarized outlooks
+- Coin-specific recommendations
 
 ---
-## Acknowledgments
+
+## ☁️ Deployment Notes
+
+Deploy cheaply on AWS using:
+- EC2 `t2.micro` instance (shutdown after 96h)
+- Lambda + EventBridge for scheduling
+- CloudFormation for VPC and IAM setup
+
+> Runtime (1000 coins): ~20 hours  
+> API Costs (monthly): ~$100 with paid tiers
+
+---
+
+## 🛠️ Contributing
+
+PRs welcome!  
+Fork → Improve → Submit a pull request 💪
+
+---
+
+## 📬 Contact
+
+Open an [issue](https://github.com/sjmoran/crypto-panda/issues) with questions or feedback.
+
+---
+
+## ⚠️ Disclaimer
+
+> **Not financial advice.**  
+> Use this project at your own risk. Always do your own research and consider consulting a licensed advisor before making trading decisions.
+
+---
+
+## 📄 License
+
+This project is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).  
+See the [LICENSE](LICENSE) file for more.
+
+---
+
+## 🙏 Acknowledgments
 
 - [CoinPaprika API](https://api.coinpaprika.com/)
 - [Santiment API](https://santiment.net/)
 - [OpenAI GPT-4o](https://openai.com/)
-- [Alternative.me Fear and Greed Index API](https://alternative.me/crypto/fear-and-greed-index/)
+- [Fear and Greed Index](https://alternative.me/crypto/fear-and-greed-index/)
