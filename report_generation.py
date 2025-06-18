@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 import logging
 from config import (  # Importing email configurations
-    EMAIL_FROM, EMAIL_TO, SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD, SMTP_PORT
+    EMAIL_FROM, EMAIL_TO, SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD, SMTP_PORT, LOG_DIR
 )
 from datetime import timedelta
 import openai
@@ -357,89 +357,6 @@ def print_command_line_report(report_entries):
     logging.debug(tabulate(df, headers="keys", tablefmt="grid"))
     logging.debug(f"\nReport generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-
-def save_report_to_excel(report_entries, filename='coin_analysis_report.xlsx'):
-    """
-    Saves the report entries to an Excel file with enhanced formatting and styling.
-
-    Args:
-        report_entries (list): A list of dictionaries containing the report data.
-        filename (str): The name of the Excel file to save the report to.
-    """
-    # Convert the report entries to a pandas DataFrame
-    df = pd.DataFrame(report_entries)
-    
-    # Save DataFrame to an Excel file without formatting
-    df.to_excel(filename, index=False)
-    
-    # Open the Excel file with openpyxl for formatting
-    workbook = load_workbook(filename)
-    sheet = workbook.active
-
-    # Define styles for headers and cells
-    header_font = Font(bold=True, color="FFFFFF", size=11)
-    header_fill = PatternFill("solid", fgColor="4F81BD")
-    cell_font = Font(name="Arial", size=10)
-    cell_alignment = Alignment(horizontal="left", vertical="top", wrap_text=False)  # Turn off wrap_text for content cells
-    
-    # Define border style
-    thin_border = Border(left=Side(style="thin"), right=Side(style="thin"),
-                         top=Side(style="thin"), bottom=Side(style="thin"))
-
-    # Apply header styles (background color, font, alignment)
-    for col in sheet.iter_cols(min_row=1, max_row=1, min_col=1, max_col=sheet.max_column):
-        max_length = 0
-        column = col[0].column_letter  # Get the column letter for header
-        for cell in col:
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)  # Turn wrapping off for headers
-            cell.border = thin_border
-            # Adjust column width based on header content
-            if len(str(cell.value)) > max_length:
-                max_length = len(str(cell.value))
-
-        adjusted_width = (max_length + 2) * 1.2  # Add some padding for headers
-        sheet.column_dimensions[column].width = adjusted_width
-
-    # Apply cell styles (font, alignment, borders) and auto-adjust column width based on content
-    for col in sheet.iter_cols(min_row=1, max_row=sheet.max_row, min_col=1, max_col=sheet.max_column):
-        max_length = 0
-        column = col[0].column_letter  # Get the column letter for data cells
-
-        for cell in col:
-            cell.font = cell_font
-            cell.alignment = cell_alignment
-            cell.border = thin_border
-
-            # Adjust column width based on the content
-            try:
-                if cell.value:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-            except Exception as e:
-                print(f"Error processing cell {cell.coordinate}: {e}")
-
-        # Set the column width to fit the content with padding
-        adjusted_width = (max_length + 2) * 1.2  # Add padding for cells
-        sheet.column_dimensions[column].width = adjusted_width
-
-    # Freeze the top row (headers) for better readability
-    sheet.freeze_panes = "A2"
-
-    # Save the workbook with the formatting applied
-    try:
-        workbook.save(filename)
-        print(f"Report saved to {filename} with enhanced formatting.")
-    except Exception as e:
-        print(f"Error saving the report: {e}")
-    finally:
-        workbook.close()
-
-    return filename
-
-
-
 def gpt4o_summarize_digest_and_extract_tickers(digest_text):
     """
     Uses GPT-4 to summarize the Sundown Digest and extract key points related to potential surges in coin value.
@@ -604,7 +521,7 @@ def send_email_with_report(html_content, attachment_path, plot_image_path='top_c
         logging.debug(traceback.format_exc())  # Log the full stack trace for debugging
 
 
-def save_report_to_excel(report_entries, filename='coin_analysis_report.xlsx'):
+def save_report_to_excel(report_entries, filename=LOG_DIR+'/coin_analysis_report.xlsx'):
     """
     Saves the report entries to an Excel file with enhanced formatting and styling.
 
