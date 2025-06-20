@@ -87,8 +87,8 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
             cumulative_score_percentage = matching_entry.get('cumulative_score_percentage', 'N/A') if matching_entry else 'N/A'
 
             # Determine background color based on expected surge status
-            background_color = "#d4edda" if item.get("recommendation", 'Yes') else "#ffe5b4"
-
+            background_color = "#d4edda" if item.get("recommendation", '').strip().lower() == "yes" else "#ffe5b4"
+            
             # Capitalize each word in the coin name
             coin_name = item["coin"].title()
 
