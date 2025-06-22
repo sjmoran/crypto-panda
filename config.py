@@ -9,6 +9,7 @@ load_dotenv()
 SAN_API_KEY = os.getenv('SAN_API_KEY')
 
 LOG_DIR='../logs/'
+DATA_DIR='../data/'
 
 # Surge-related words
 surge_words = [
@@ -37,13 +38,13 @@ SMTP_PORT = 587
 
 # Files and Tickers
 RESULTS_FILE = LOG_DIR + "/surging_coins.csv"
-CRYPTO_NEWS_TICKERS = LOG_DIR + "/data/tickers.csv"
+CRYPTO_NEWS_TICKERS = DATA_DIR + "/tickers.csv"
 
 # Score thresholds
 FEAR_GREED_THRESHOLD = 60  # Fear and Greed index threshold
 HIGH_VOLATILITY_THRESHOLD = 0.05  # 5% volatility is considered high
 MEDIUM_VOLATILITY_THRESHOLD = 0.02  # 2% volatility is considered medium
-NUMBER_OF_TOP_COINS_TO_MONITOR = 25
+NUMBER_OF_TOP_COINS_TO_MONITOR = 500
 
 # Testing and retries
 TEST_ONLY = False  # Set to False to monitor all coins
@@ -51,7 +52,7 @@ MAX_RETRIES = 2  # Maximum number of retries for API calls
 BACKOFF_FACTOR = 2  # Factor by which the wait time increases after each failure
 
 # Reporting
-CUMULATIVE_SCORE_REPORTING_THRESHOLD = 50  # Only report results with cumulative score above this % value
+CUMULATIVE_SCORE_REPORTING_THRESHOLD = 40  # Only report results with cumulative score above this % value
 
 AURORA_HOST = os.getenv('AURORA_HOST')  # Make sure this points to the correct server
 AURORA_PORT = os.getenv('AURORA_PORT', 5432)  # Ensure the port is correct (default is 5432)
