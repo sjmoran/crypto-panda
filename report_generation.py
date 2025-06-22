@@ -20,6 +20,7 @@ import traceback
 import glob
 from api_clients import api_call_with_retries
 
+
 def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations, plot_image_path='top_coins_plot.png'):
     """
     Generates an HTML report with summaries from the report entries, GPT-4o recommendations, and a plot of the top coins.
@@ -519,6 +520,7 @@ def send_email_with_report(html_content, attachment_path, plot_image_path='top_c
     except Exception as e:
         logging.error(f"An error occurred in send_email_with_report: {e}")
         logging.debug(traceback.format_exc())  # Log the full stack trace for debugging
+
 
 
 def save_report_to_excel(report_entries, filename=LOG_DIR+'/coin_analysis_report.xlsx'):
