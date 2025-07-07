@@ -23,7 +23,7 @@ from config import (
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
     TEST_ONLY,
-    LOG_DIR
+    LOG_DIR,DOT_ENV_PATH
 )
 
 import re  # Add the missing import for regular expressions
