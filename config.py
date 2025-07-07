@@ -36,6 +36,8 @@ SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = 587
 
+DOT_ENV_PATH="/home/ec2-user/crypto-panda/crypto-panda/.env"
+
 # Files and Tickers
 RESULTS_FILE = LOG_DIR + "/surging_coins.csv"
 CRYPTO_NEWS_TICKERS = DATA_DIR + "/tickers.csv"

@@ -19,7 +19,8 @@ from email.mime.application import MIMEApplication
 import traceback
 import glob
 from api_clients import api_call_with_retries
-
+from tabulate import tabulate
+import time
 
 def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations, plot_image_path='top_coins_plot.png'):
     """
@@ -269,8 +270,8 @@ def send_failure_email():
             logging.debug(f"Failed to delete flag file {file}: {e}")
 
     # Proceed to send the email if no flag file exists for today
-    if os.path.exists(RESULTS_FILE):
-        with open(RESULTS_FILE, 'r') as file:
+    if os.path.exists(LOG_DIR+'/coin_analysis_report.xlsx'):
+        with open(LOG_DIR+'/coin_analysis_report.xlsx', 'r') as file:
             file_contents = file.read()
     else:
         file_contents = "No data available, as the results file was not created."
@@ -448,7 +449,7 @@ def summarize_sundown_digest(digest):
     summary_and_tickers = gpt4o_summarize_digest_and_extract_tickers(combined_digest_text)
     return summary_and_tickers
 
-def send_email_with_report(html_content, attachment_path, plot_image_path='top_coins_plot.png', recommendations=None):
+def send_email_with_report(html_content, attachment_path, plot_image_path=LOG_DIR+'top_coins_plot.png', recommendations=None):
     """
     Sends an email with an HTML report and an attached image.
 

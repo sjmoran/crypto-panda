@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from config import (
     AURORA_HOST, AURORA_PORT, AURORA_DB, AURORA_USER, AURORA_PASSWORD,  # Aurora DB credentials
-    RESULTS_FILE
+    RESULTS_FILE, LOG_DIR
 )
 from psycopg2 import OperationalError
 import logging 
@@ -41,8 +41,8 @@ def save_result_to_csv(result):
     current_date = datetime.now().strftime("%Y-%m-%d")
     
     # Create a filename with the current date
-    results_file = f"results_{current_date}.csv"
-    
+    results_file = os.path.join(LOG_DIR, f"results_{current_date}.csv")
+
     # Check if today's results file exists
     if not os.path.exists(results_file):
         # If the file doesn't exist, create it with headers
@@ -191,8 +191,8 @@ def load_existing_results():
     current_date = datetime.now().strftime("%Y-%m-%d")
     
     # Construct the expected file name
-    results_file = f"results_{current_date}.csv"
-    
+    results_file = os.path.join(LOG_DIR, f"results_{current_date}.csv")
+
     # Check if the file exists for the current date
     if not os.path.exists(results_file):
         logging.debug(f"File {results_file} does not exist. Removing all old results files.")

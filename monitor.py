@@ -41,7 +41,7 @@ import traceback
 import logging 
 
 # Load environment variables from .env
-load_dotenv()
+load_dotenv(dotenv_path=DOT_ENV_PATH) 
 
 # Set up logging configuration
 logging.basicConfig(
