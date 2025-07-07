@@ -1,11 +1,9 @@
 import requests
 import logging
 import san  # Add the missing sanpy import for Santiment API
-from time import sleep
 from config import (
     BACKOFF_FACTOR,
-    MAX_RETRIES,
-    SAN_API_KEY,  # For the Santiment API key
+    MAX_RETRIES,  # For the Santiment API key
 )
 import re  # Add the missing import for regular expressions
 from helpers import normalize_score

@@ -1,8 +1,3 @@
-import pandas as pd
-import math
-import logging
-from config import BACKOFF_FACTOR  # If needed for retry logic
-
 def normalize_score(raw_score, min_score, max_score, range=3):
     """
     Normalize a score to be between 0 and 3 and return the nearest integer.

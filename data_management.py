@@ -3,9 +3,7 @@ import pandas as pd
 import psycopg2
 from datetime import datetime
 from sqlalchemy import create_engine
-from config import (
-    AURORA_HOST, AURORA_PORT, AURORA_DB, AURORA_USER, AURORA_PASSWORD,  # Aurora DB credentials
-    RESULTS_FILE, LOG_DIR
+from config import ( LOG_DIR
 )
 from psycopg2 import OperationalError
 import logging 
