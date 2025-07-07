@@ -23,10 +23,9 @@ from config import (
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
     TEST_ONLY,
-    LOG_DIR,DOT_ENV_PATH
+    LOG_DIR
 )
 
-from dotenv import load_dotenv
 from coinpaprika import client as Coinpaprika
 from data_management import load_existing_results
 from api_clients import api_call_with_retries
@@ -40,7 +39,7 @@ import logging
 
 from config import COIN_PAPRIKA_API_KEY
 
-client = Coinpaprika.Client(COIN_PAPRIKA_API_KEY)
+client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
 # Set up logging configuration
 logging.basicConfig(

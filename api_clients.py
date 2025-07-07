@@ -17,17 +17,7 @@ from datetime import datetime, timedelta
 from config import COIN_PAPRIKA_API_KEY
 from coinpaprika import client as Coinpaprika
 
-try:
-    if not COIN_PAPRIKA_API_KEY:
-        raise ValueError("COIN_PAPRIKA_API_KEY is not set or is empty.")
-
-    print(f"[{datetime.now()}] API key loaded successfully (length: {len(COIN_PAPRIKA_API_KEY)} characters)")
-
-    client = Coinpaprika.Client(COIN_PAPRIKA_API_KEY)
-
-except Exception as e:
-    print(f"[{datetime.now()}] ERROR: {e}")
-    traceback.print_exc()
+client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
 def api_call_with_retries(api_function, *args, **kwargs):
     """
