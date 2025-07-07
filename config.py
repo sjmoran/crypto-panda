@@ -46,7 +46,7 @@ CRYPTO_NEWS_TICKERS = DATA_DIR + "/tickers.csv"
 FEAR_GREED_THRESHOLD = 60  # Fear and Greed index threshold
 HIGH_VOLATILITY_THRESHOLD = 0.05  # 5% volatility is considered high
 MEDIUM_VOLATILITY_THRESHOLD = 0.02  # 2% volatility is considered medium
-NUMBER_OF_TOP_COINS_TO_MONITOR = 500
+NUMBER_OF_TOP_COINS_TO_MONITOR = 5
 
 # Testing and retries
 TEST_ONLY = False  # Set to False to monitor all coins
