@@ -2,8 +2,10 @@ import os
 from dotenv import load_dotenv  # Load dotenv
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-# Load environment variables from .env file
-load_dotenv()
+DOT_ENV_PATH="/home/ec2-user/crypto-panda/crypto-panda/.env"
+
+# Load environment variables from .env
+load_dotenv(dotenv_path=DOT_ENV_PATH)
 
 # Initialize Sanpy API key
 SAN_API_KEY = os.getenv('SAN_API_KEY')
@@ -35,8 +37,6 @@ SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = 587
-
-DOT_ENV_PATH="/home/ec2-user/crypto-panda/crypto-panda/.env"
 
 # Files and Tickers
 RESULTS_FILE = LOG_DIR + "/surging_coins.csv"
