@@ -7,12 +7,8 @@ from config import (  # Importing relevant constants from the config file
     HIGH_VOLATILITY_THRESHOLD, MEDIUM_VOLATILITY_THRESHOLD,
     surge_words, FEAR_GREED_THRESHOLD,LOW_VOLUME_THRESHOLD_LARGE, LOW_VOLUME_THRESHOLD_MID, LOW_VOLUME_THRESHOLD_SMALL, analyzer
 )
-from helpers import filter_active_and_ranked_coins
 from datetime import datetime, timedelta
 from api_clients import client, api_call_with_retries,fetch_historical_ticker_data,fetch_santiment_data_for_coin,fetch_twitter_data,fetch_fear_and_greed_index
-import json
-import openai
-import re
 
 def analyze_volume_change(volume_data, market_cap, volatility):
     """

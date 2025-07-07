@@ -1,7 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import logging
 
 def plot_top_coins_over_time(historical_data, top_n=5, file_name='top_coins_plot.png', window=5):
     """

@@ -26,22 +26,21 @@ from config import (
     LOG_DIR,DOT_ENV_PATH
 )
 
-import re  # Add the missing import for regular expressions
 from dotenv import load_dotenv
 from coinpaprika import client as Coinpaprika
 from data_management import load_existing_results
 from api_clients import api_call_with_retries
 from helpers import filter_active_and_ranked_coins
 from data_management import load_tickers
-from config import COIN_PAPRIKA_API_KEY
 from api_clients import (
     fetch_santiment_slugs, client
 )
 import traceback
 import logging 
 
-# Load environment variables from .env
-load_dotenv(dotenv_path=DOT_ENV_PATH) 
+from config import COIN_PAPRIKA_API_KEY
+
+client = Coinpaprika.Client(COIN_PAPRIKA_API_KEY)
 
 # Set up logging configuration
 logging.basicConfig(
@@ -54,9 +53,6 @@ logging.basicConfig(
 )
 
 logging.debug("Logging is set up and the application has started.")
-
-# Initialize the CoinPaprika client
-client = Coinpaprika.Client(api_key=os.getenv('COIN_PAPRIKA_API_KEY'))
 
 def monitor_coins_and_send_report():
     """
