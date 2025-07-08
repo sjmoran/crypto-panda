@@ -22,7 +22,7 @@ from api_clients import api_call_with_retries
 from tabulate import tabulate
 import time
 
-def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations, plot_image_path='top_coins_plot.png'):
+def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations):
     """
     Generates an HTML report with summaries from the report entries, GPT-4o recommendations, and a plot of the top coins.
 
@@ -487,7 +487,7 @@ def send_email_with_report(html_content, attachment_path, plot_image_path=LOG_DI
                 with open(plot_image_path, 'rb') as img_file:
                     mime_image = MIMEImage(img_file.read(), _subtype='png')
                     mime_image.add_header('Content-ID', '<top_coins_plot>')  # Content-ID should match CID in HTML
-                    mime_image.add_header('Content-Disposition', 'inline', filename="top_coins_plot.png")
+                    mime_image.add_header('Content-Disposition', 'inline', filename=LOG_DIR+"/top_coins_plot.png")
                     msg.attach(mime_image)
             except Exception as e:
                 logging.error(f"Error attaching plot image: {e}")

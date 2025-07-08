@@ -1,8 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from config import ( LOG_DIR )
 
-def plot_top_coins_over_time(historical_data, top_n=5, file_name='top_coins_plot.png', window=5):
+def plot_top_coins_over_time(historical_data, top_n=5, file_name=LOG_DIR+'/top_coins_plot.png', window=5):
     """
     Plots the cumulative scores of the top coins over time with optional smoothing and saves the plot to a file.
 
