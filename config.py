@@ -31,7 +31,7 @@ LOW_VOLUME_THRESHOLD_MID = 500_000  # Mid-cap coins with daily volume under $500
 LOW_VOLUME_THRESHOLD_SMALL = 100_000  # Small-cap coins with daily volume under $100k
 
 # Email configuration
-EMAIL_FROM = os.getenv('CRYPTOPANDA_EMAIL_FROM')
+EMAIL_FROM = os.getenv('EMAIL_FROM')
 EMAIL_TO = os.getenv('EMAIL_TO')
 SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_USERNAME = os.getenv('SMTP_USERNAME')

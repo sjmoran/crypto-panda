@@ -469,6 +469,10 @@ def send_email_with_report(html_content, attachment_path, plot_image_path=LOG_DI
     try:
         logging.debug(f"Preparing email with attachment: {attachment_path} and plot: {plot_image_path}")
         
+        if not EMAIL_FROM or not EMAIL_TO:
+            logging.error("EMAIL_FROM is not set. Cannot send email.")
+            return
+        
         # Create a 'related' multipart message for HTML + images
         msg = MIMEMultipart('related')  # 'related' allows attaching both HTML and images
         msg['Subject'] = "AI Generated Coin Analysis Report"
@@ -505,18 +509,19 @@ def send_email_with_report(html_content, attachment_path, plot_image_path=LOG_DI
                 logging.error(f"Error attaching Excel file: {e}")
                 logging.debug(traceback.format_exc())  # Log the full stack trace
 
-        # Send the email
+
         try:
             logging.debug(f"Connecting to SMTP server: {SMTP_SERVER}")
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
                 server.starttls()
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                recipients = EMAIL_TO.split(",")   # Add BCC recipients to the send list
+                recipients = EMAIL_TO.split(",")
                 server.sendmail(EMAIL_FROM, recipients, msg.as_string())
-            logging.debug("Email sent successfully.")
+            logging.debug("Email sent successfully.")  # <-- Only log here, inside try
         except Exception as e:
             logging.error(f"Error sending email: {e}")
             logging.debug(traceback.format_exc())  # Log the full stack trace
+
 
     except Exception as e:
         logging.error(f"An error occurred in send_email_with_report: {e}")
