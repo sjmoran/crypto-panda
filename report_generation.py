@@ -182,7 +182,6 @@ def gpt4o_analyze_and_recommend(df):
     # Convert DataFrame to JSON for input
     df_json = df.to_dict(orient='records')
 
-    # Prepare prompt
     prompt = f"""
         You are provided with detailed analysis data for several cryptocurrency coins. Using this data, evaluate each coin individually and provide a recommendation on whether it should be considered for purchase based on the potential for a breakout or surge in value.
 
@@ -191,6 +190,8 @@ def gpt4o_analyze_and_recommend(df):
         2. If the coin does not show clear signs of immediate surge or breakout potential, set "recommendation" to "No" and explain why in detail.
         3. Do **not infer** surge potential from vague or weak signals. Only assign "Yes" if the evidence is solid and explicitly supports it.
         4. Avoid recommending coins unless you can confidently support the decision using concrete factors such as liquidity risk, cumulative score, sentiment score, volume, price trends, or similar indicators.
+        5. **Ensure that each coin appears only once in the recommendations.** If there are multiple entries for the same coin (even with different casing, punctuation, or small variations in name), **deduplicate** and only include the most recent or most relevant entry for each coin. Do not report the same coin more than once.
+        6. **Only opine on coins for which you have high confidence in your analysis.** If the data is insufficient, ambiguous, or does not allow you to form a clear, well-justified recommendation, do not include that coin in the output at all.
 
         **Do not repeat or summarize the dataset.** Instead, return structured JSON recommendations for each coin with a clear, specific, and data-grounded explanation.
 
@@ -211,7 +212,6 @@ def gpt4o_analyze_and_recommend(df):
     Here is the data for your analysis:
     {json.dumps(df_json, indent=2)}
     """
-
     def api_call():
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
