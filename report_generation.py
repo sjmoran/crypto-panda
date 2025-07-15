@@ -186,16 +186,26 @@ def gpt4o_analyze_and_recommend(df):
         You are provided with detailed analysis data for several cryptocurrency coins. Using this data, evaluate each coin individually and provide a recommendation on whether it should be considered for purchase based on the potential for a breakout or surge in value.
 
         **Key requirements:**
-        1. Only recommend a coin for purchase (i.e., "recommendation": "Yes") if there is a **clear and strong indication** of breakout or surge potential in the data. The reasoning must clearly and specifically justify this based on relevant metrics.
-        2. If the coin does not show clear signs of immediate surge or breakout potential, set "recommendation" to "No" and explain why in detail.
-        3. Do **not infer** surge potential from vague or weak signals. Only assign "Yes" if the evidence is solid and explicitly supports it.
-        4. Avoid recommending coins unless you can confidently support the decision using concrete factors such as liquidity risk, cumulative score, sentiment score, volume, price trends, or similar indicators.
-        5. **Ensure that each coin appears only once in the recommendations.** If there are multiple entries for the same coin (even with different casing, punctuation, or small variations in name), **deduplicate** and only include the most recent or most relevant entry for each coin. Do not report the same coin more than once.
-        6. **Only opine on coins for which you have high confidence in your analysis.** If the data is insufficient, ambiguous, or does not allow you to form a clear, well-justified recommendation, do not include that coin in the output at all.
 
-        **Do not repeat or summarize the dataset.** Instead, return structured JSON recommendations for each coin with a clear, specific, and data-grounded explanation.
+        1. Only recommend a coin for purchase (i.e., `"recommendation": "Yes"`) if there is a **clear and strong indication** of breakout or surge potential in the data. The reasoning must explicitly reference specific and relevant metrics that support the conclusion.
 
-        Format your response as follows:
+        2. If the coin shows **clear and confident evidence that it is unlikely to break out**, then include it with `"recommendation": "No"` and provide a well-reasoned, specific explanation grounded in the data (e.g., poor sentiment, low volume, negative trend, etc.).
+
+        3. Do **not include** coins in the output if the data is ambiguous, incomplete, or does not allow a confident decision in either direction. Only include coins for which your analysis leads to a **clear and confident "Yes" or "No"**.
+
+        4. Do **not infer** surge potential or rejection from vague or weak signals. Base your decisions only on solid evidence such as:
+        - Cumulative score
+        - Sentiment score
+        - Volume and liquidity risk
+        - Price trends or volatility metrics
+
+        5. **Deduplicate** entries: If there are multiple records referring to the same coin (even if the names are slightly different), only include the **most relevant and recent** one. Each coin should appear **only once** in the output.
+
+        6. Do **not** summarize or repeat the input dataset.
+
+        7. Format your output as structured JSON with one entry per confidently analyzed coin.
+
+        **Output format:**
         {{
             "recommendations": [
                 {{
@@ -203,15 +213,15 @@ def gpt4o_analyze_and_recommend(df):
                     "liquidity_risk": "Low/Medium/High",
                     "cumulative_score": "Score Value",
                     "recommendation": "Yes/No",
-                    "reason": "Provide a fluent, specific, and data-driven reason based on the analysis provided. Clearly explain why this coin is or is not recommended for purchase, citing relevant metrics or trends from the data."
+                    "reason": "Provide a fluent, specific, and data-driven reason. Clearly explain why this coin is or is not recommended for purchase, citing relevant metrics or trends from the data."
                 }},
                 ...
             ]
         }}
 
-    Here is the data for your analysis:
     {json.dumps(df_json, indent=2)}
     """
+    
     def api_call():
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
