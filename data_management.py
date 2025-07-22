@@ -8,6 +8,7 @@ from config import ( LOG_DIR
 from psycopg2 import OperationalError
 import logging 
 import glob
+from sqlalchemy.exc import SQLAlchemyError
 
 def load_tickers(file_path):
     """
@@ -49,9 +50,15 @@ def save_result_to_csv(result):
         # If the file exists, append to it without writing headers again
         pd.DataFrame([result]).to_csv(results_file, mode='a', header=False, index=False)
 
+
 def retrieve_historical_data_from_aurora():
     """
-    Retrieves historical cumulative scores from Amazon Aurora for all coins.
+    Retrieves historical cumulative scores from Amazon Aurora for all coins
+    within the past 2 months.
+
+    This function assumes that the environment variables AURORA_USER, AURORA_PASSWORD,
+    AURORA_HOST, AURORA_PORT, and AURORA_DB are set to point to the
+    Amazon Aurora database.
 
     Returns:
         pd.DataFrame: A DataFrame containing the timestamp, coin name, and cumulative score.
@@ -67,23 +74,29 @@ def retrieve_historical_data_from_aurora():
         # Create an SQLAlchemy engine
         engine = create_engine(db_connection_str)
 
-        # Define the SQL query to retrieve time series data
+        # Define the SQL query to retrieve data from the past 2 months
         query = """
             SELECT coin_name, cumulative_score, timestamp 
             FROM coin_data
+            WHERE timestamp >= NOW() - INTERVAL '2 months'
             ORDER BY timestamp;
         """
         
         # Use pandas to execute the query and return the result as a DataFrame
+        # the past 2 months.
         df = pd.read_sql(query, engine)
-        print("Historical data retrieved successfully.")
+        print("Historical data (last 2 months) retrieved successfully.")
         return df
 
     except SQLAlchemyError as e:
         print(f"Error retrieving historical data: {e}")
+
         return pd.DataFrame()  # Return empty DataFrame on failure
 
+        # The read_sql function takes the query and the engine, and returns a DataFrame
     finally:
+
+        # Print a message if the query is successful
         if engine:
             engine.dispose()  # Close the connection
             print("PostgreSQL connection is closed.")
