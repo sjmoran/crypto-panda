@@ -1,0 +1,195 @@
+import os
+import time
+import pandas as pd
+import logging
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+import traceback
+
+from api_clients import (
+    get_sundown_digest,
+    fetch_trending_coins_scores,
+    fetch_news_for_past_week,
+    fetch_santiment_slugs,
+    client,
+    api_call_with_retries
+)
+from coin_analysis import analyze_coin
+from data_management import (
+    save_result_to_csv,
+    retrieve_historical_data_from_aurora,
+    save_cumulative_score_to_aurora,
+    create_coin_data_table_if_not_exists,
+    load_existing_results,
+    load_tickers
+)
+from plotting import plot_top_coins_over_time
+from report_generation import (
+    gpt4o_analyze_and_recommend,
+    save_report_to_excel,
+    summarize_sundown_digest,
+    generate_html_report_with_recommendations,
+    send_email_with_report
+)
+from config import (
+    TEST_ONLY,
+    CUMULATIVE_SCORE_REPORTING_THRESHOLD,
+    NUMBER_OF_TOP_COINS_TO_MONITOR,
+    CRYPTO_NEWS_TICKERS,
+    LOG_DIR,
+    COIN_PAPRIKA_API_KEY
+)
+from helpers import (filter_active_and_ranked_coins)
+
+from coinpaprika import client as Coinpaprika
+
+client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
+
+# Set up logging configuration
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_DIR + '/crypto-panda.log', mode='w')
+    ]
+)
+
+logging.debug("Logging is set up and the application has started.")
+
+def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date):
+    try:
+        coin_id = coin['id']
+        coin_name = coin['name'].lower()
+
+        if existing_results is not None and not existing_results.empty and coin_id in existing_results['coin_id'].values:
+            logging.debug(f"Skipping already processed coin: {coin_id}")
+            return None
+
+        logging.debug(f"Processing {coin_name} ({coin_id})")
+
+        coins_dict = {coin_name: tickers_dict.get(coin_name, '').upper()}
+        news_df = fetch_news_for_past_week(coins_dict)
+
+        result = analyze_coin(
+            coin_id,
+            coin_name,
+            end_date,
+            news_df,
+            digest_tickers,
+            trending_coins_scores,
+            santiment_slugs_df
+        )
+
+        save_result_to_csv(result)
+        save_cumulative_score_to_aurora(result['coin_id'], result['coin_name'], result['cumulative_score_percentage'])
+
+        return result
+
+    except Exception as e:
+        logging.debug(f"Error processing {coin['name']} ({coin['id']}): {e}")
+        logging.debug(traceback.format_exc())
+        return None
+
+def monitor_coins_and_send_report():
+    create_coin_data_table_if_not_exists()
+
+    if TEST_ONLY:
+        existing_results = pd.DataFrame([])
+        coins_to_monitor = [
+            {"id": "btc-bitcoin", "name": "Bitcoin"},
+            {"id": "eth-ethereum", "name": "Ethereum"},
+        ]
+    else:
+        existing_results = load_existing_results()
+        coins_to_monitor = api_call_with_retries(client.coins)
+        logging.debug(f"Number of coins retrieved: {len(coins_to_monitor)}")
+        coins_to_monitor = filter_active_and_ranked_coins(coins_to_monitor, NUMBER_OF_TOP_COINS_TO_MONITOR)
+
+    logging.debug(f"Number of active and ranked coins selected: {len(coins_to_monitor)}")
+    end_date = datetime.now().strftime('%Y-%m-%d')
+
+    tickers_dict = load_tickers(CRYPTO_NEWS_TICKERS)
+    sundown_digest = get_sundown_digest()
+    digest_summary = summarize_sundown_digest(sundown_digest)
+    digest_tickers = digest_summary['tickers']
+    trending_coins_scores = fetch_trending_coins_scores()
+    santiment_slugs_df = fetch_santiment_slugs()
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = executor.map(
+            lambda coin: process_single_coin(
+                coin,
+                existing_results,
+                tickers_dict,
+                digest_tickers,
+                trending_coins_scores,
+                santiment_slugs_df,
+                end_date
+            ),
+            coins_to_monitor
+        )
+        report_entries = [r for r in tqdm(futures, total=len(coins_to_monitor), desc="Processing Coins") if r is not None]
+
+    df = pd.DataFrame(report_entries)
+
+    try:
+        if not df.empty:
+            df = df[(df['liquidity_risk'].isin(['Low', 'Medium'])) & (df['cumulative_score_percentage'] > CUMULATIVE_SCORE_REPORTING_THRESHOLD)]
+
+            logging.debug("DataFrame is not empty, processing report entries.")
+            coins_in_df = df['coin_name'].unique()
+
+            if len(coins_in_df) > 0:
+                historical_data = retrieve_historical_data_from_aurora()
+
+                if not historical_data.empty:
+                    plot_top_coins_over_time(historical_data[historical_data['coin_name'].isin(coins_in_df)], top_n=10)
+
+            report_entries = df.to_dict('records')
+            report_entries = sorted(report_entries, key=lambda x: x.get('cumulative_score', 0), reverse=True)
+            logging.debug(f"Report entries after sorting: {report_entries}")
+            
+            # Ensure numeric fields are correctly typed
+            numeric_fields = [
+                "price_change_score", "volume_change_score", "sentiment_score",
+                "surging_keywords_score", "news_digest_score", "trending_score",
+                "santiment_score", "cumulative_score", "cumulative_score_percentage",
+                "fear_and_greed_index", "market_cap", "volume_24h", "events"
+            ]
+
+            for field in numeric_fields:
+                if field in df.columns:
+                    df[field] = pd.to_numeric(df[field], errors='coerce')
+
+            logging.debug("DataFrame contents before GPT-4o recommendations:\n%s", df.to_string())
+
+            gpt_recommendations = gpt4o_analyze_and_recommend(df)
+            logging.debug(f"GPT-4o recommendations: {gpt_recommendations}")
+
+            html_report = generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations)
+            logging.debug("HTML report generated successfully.")
+
+            attachment_path = save_report_to_excel(report_entries)
+            logging.debug(f"Report saved to Excel at: {attachment_path}")
+
+            send_email_with_report(html_report, attachment_path, recommendations=gpt_recommendations['recommendations'])
+            logging.debug("Email sent successfully.")
+
+            current_date = datetime.now().strftime("%Y-%m-%d")
+            results_file = LOG_DIR + f"/results_{current_date}.csv"
+
+            if os.path.exists(results_file):
+                try:
+                    os.remove(results_file)
+                    logging.debug(f"{results_file} has been deleted successfully.")
+                except Exception as e:
+                    logging.debug(f"Failed to delete {results_file}: {e}")
+        else:
+            logging.debug("No valid entries to report. DataFrame is empty.")
+    except Exception as e:
+        logging.error(f"An error occurred during the report generation process: {e}")
+
+if __name__ == "__main__":
+    monitor_coins_and_send_report()
