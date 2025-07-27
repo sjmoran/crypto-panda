@@ -59,6 +59,28 @@ logging.basicConfig(
 logging.debug("Logging is set up and the application has started.")
 
 def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date):
+    """
+    Processes a single coin, performing the following steps:
+
+    1. Skips coins that have already been processed in the past week.
+    2. Fetches news articles for the coin for the past week.
+    3. Analyzes the coin using the analyze_coin function.
+    4. Saves the result to the CSV file.
+    5. Saves the cumulative score to Aurora.
+    6. Returns the result.
+
+    Parameters:
+        coin (dict): The coin to process, with keys 'id' and 'name'.
+        existing_results (pd.DataFrame): The existing results for the past week.
+        tickers_dict (dict): A dictionary mapping coin names to their corresponding tickers.
+        digest_tickers (list): A list of tickers extracted from the Sundown Digest.
+        trending_coins_scores (dict): A dictionary with tickers as keys and their respective scores.
+        santiment_slugs_df (pd.DataFrame): DataFrame containing Santiment slugs for various coins.
+        end_date (str): The end date of the period for which to fetch the historical ticker data (in YYYY-MM-DD format).
+
+    Returns:
+        dict: The result of the analysis, with keys 'coin_id', 'coin_name', 'cumulative_score_percentage', and 'explanation'.
+    """
     try:
         coin_id = coin['id']
         coin_name = coin['name'].lower()
@@ -93,6 +115,21 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         return None
 
 def monitor_coins_and_send_report():
+    """
+    Main entry point for monitoring coins and generating a weekly report.
+
+    The following steps are taken in this function:
+
+    1. Create the coin data table in Aurora if it does not exist.
+    2. Load existing results from the previous week.
+    3. Retrieve a list of active and ranked coins from CoinPaprika.
+    4. Process each coin in parallel using the `process_single_coin` function.
+    5. Filter the results to only include coins with a cumulative score greater than the threshold.
+    6. Plot the top coins over time using the historical data.
+    7. Generate an HTML report with the results and send it via email.
+
+    :return: None
+    """
     create_coin_data_table_if_not_exists()
 
     if TEST_ONLY:
