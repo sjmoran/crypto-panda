@@ -251,7 +251,7 @@ Now, here is the dataset:
 
     def api_call():
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             n=1,
             stop=None,
