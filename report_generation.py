@@ -213,7 +213,6 @@ Please follow this **step-by-step reasoning process** for each coin:
 5. **Apply Decision Criteria**:
    - Recommend "Yes" only if there is **strong and clear evidence** supporting a breakout potential.
    - Recommend "No" only if there is **clear and confident evidence against** a breakout.
-   - Skip coins if evidence is ambiguous, contradictory, or weak.
 
 6. **Generate Explanation**:
    - Clearly justify the recommendation using data.
