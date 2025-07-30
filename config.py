@@ -50,7 +50,7 @@ CRYPTO_NEWS_TICKERS = DATA_DIR + "/tickers.csv"        # List of tickers for fil
 FEAR_GREED_THRESHOLD = 60               # Only consider coins if fear/greed index > 60
 HIGH_VOLATILITY_THRESHOLD = 0.05        # >5% daily price movement is high volatility
 MEDIUM_VOLATILITY_THRESHOLD = 0.02      # 2–5% is medium volatility
-NUMBER_OF_TOP_COINS_TO_MONITOR = 1     # Limit number of top coins considered in reports
+NUMBER_OF_TOP_COINS_TO_MONITOR = 2000     # Limit number of top coins considered in reports
 
 # Control flags for running/testing
 TEST_ONLY = False                       # Set to True to test without triggering actions
