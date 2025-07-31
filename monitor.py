@@ -26,7 +26,7 @@ from data_management import (
 )
 from plotting import plot_top_coins_over_time
 from report_generation import (
-    gpt4o_analyze_and_recommend,
+    gpt4o_summarize_each_coin,
     save_report_to_excel,
     summarize_sundown_digest,
     generate_html_report_with_recommendations,
@@ -202,7 +202,7 @@ def monitor_coins_and_send_report():
 
             logging.debug("DataFrame contents before GPT-4o recommendations:\n%s", df.to_string())
 
-            gpt_recommendations = gpt4o_analyze_and_recommend(df)
+            gpt_recommendations = gpt4o_summarize_each_coin(df)
             logging.debug(f"GPT-4o recommendations: {gpt_recommendations}")
 
             html_report = generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations)
