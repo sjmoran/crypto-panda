@@ -168,6 +168,94 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
 
     return html_content
 
+def gpt4o_summarize_each_coin(df):
+    """
+    Uses GPT-4o to generate a structured summary of each coin's metrics without making a recommendation.
+    The output format is kept identical, with "recommendation": "Y" by default to match pipeline expectations.
+
+    Parameters:
+        df (pd.DataFrame): The final DataFrame containing coin analysis results.
+
+    Returns:
+        dict: A structured summary for each coin with explanation, and a default "Y" recommendation.
+    """
+    try:
+        df_json = df.to_dict(orient='records')
+        dataset_json = json.dumps(df_json, indent=2).replace('%', '%%')
+    except Exception as e:
+        logging.error(f"Failed to serialize df_json: {e}")
+        dataset_json = "{}"
+
+    prompt = f"""
+You are provided with structured analysis data for multiple cryptocurrency coins.
+
+Your task is to **summarize the data for each coin** using the available metrics. You are not deciding whether to recommend the coin or not. Instead, provide a concise, fluent, and data-driven explanation of each coin's situation.
+
+---
+
+### Output Format (Structured JSON Only):
+
+```json
+{{
+  "recommendations": [
+    {{
+      "coin": "Coin Name",
+      "liquidity_risk": "Low/Medium/High",
+      "cumulative_score": "Score Value",
+      "recommendation": "Y",
+      "reason": "A fluent, specific, data-driven explanation referencing key metrics (e.g., sentiment, volume, price change score, liquidity risk, and cumulative score)."
+    }}
+  ]
+}}
+```
+
+---
+
+### Instructions:
+
+- Do **not** make any recommendation judgment — always use \"recommendation\": \"Y\" by default.
+- Reference at least two specific metrics in the `reason`.
+- Be factual, objective, and consistent in tone.
+- Deduplicate coins by name or ID — only include the most recent or relevant entry.
+- Do **not** summarize the dataset as a whole.
+- Return **only** valid structured JSON as shown above.
+
+Now, here is the dataset:
+{dataset_json}
+"""
+
+    def api_call():
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            n=1,
+            stop=None,
+            temperature=0.0
+        )
+        return response
+
+    try:
+        response = api_call_with_retries(api_call)
+        gpt_message_content = response['choices'][0]['message']['content']
+
+        logging.debug("Raw GPT response:\n%s", gpt_message_content)
+
+        json_match = re.search(r'```json(.*?)```', gpt_message_content, re.DOTALL)
+        if json_match:
+            json_content = json_match.group(1).strip()
+            logging.debug("Extracted JSON content:\n%s", json_content)
+
+            parsed_data = json.loads(json_content)
+            logging.debug(f"Parsed JSON data: {parsed_data}")
+            return parsed_data
+
+        logging.debug("No JSON content found in the GPT response.")
+        return {"recommendations": []}
+
+    except Exception as e:
+        logging.error(f"Failed to complete GPT-4o summary: {e}")
+        return {"recommendations": []}
+
 def gpt4o_analyze_and_recommend(df):
     """
     Uses GPT-4o to analyze the final results DataFrame and provide structured recommendations for coin purchases.
