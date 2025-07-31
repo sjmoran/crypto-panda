@@ -223,7 +223,7 @@ Your summary must turn these scores into natural language and explain what they 
       "coin": "Coin Name",
       "liquidity_risk": "Low/Medium/High",
       "cumulative_score": "Score Value",
-      "recommendation": "Y",
+      "recommendation": "Yes/No",
       "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores."
     }}
   ]
