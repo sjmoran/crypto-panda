@@ -202,7 +202,7 @@ Your task is to **summarize the data for each coin** using the available metrics
       "coin": "Coin Name",
       "liquidity_risk": "Low/Medium/High",
       "cumulative_score": "Score Value",
-      "recommendation": "Y",
+      "recommendation": "Yes/No",
       "reason": "A fluent, specific, data-driven explanation referencing key metrics (e.g., sentiment, volume, price change score, liquidity risk, and cumulative score)."
     }}
   ]
