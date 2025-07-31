@@ -234,7 +234,7 @@ Your summary must turn these scores into natural language and explain what they 
 
 ### Instructions:
 
-- Always use \"recommendation\": \"Y\".
+- Always use \"recommendation\": \"Yes\".
 - Do NOT quote raw scores alone — always explain what they mean.
 - Use a fluent, confident tone. Avoid jargon or numbers without meaning.
 - Do NOT summarize the dataset as a whole.
