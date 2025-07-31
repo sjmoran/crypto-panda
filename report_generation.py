@@ -189,7 +189,28 @@ def gpt4o_summarize_each_coin(df):
     prompt = f"""
 You are provided with structured analysis data for multiple cryptocurrency coins.
 
-Your task is to **summarize the data for each coin** using the available metrics. You are not deciding whether to recommend the coin or not. Instead, provide a concise, fluent, and data-driven explanation of each coin's situation.
+Your task is to **summarize the data for each coin** using the available metrics. You are NOT deciding whether to recommend the coin. Instead, describe the coin's performance in intuitive, human-readable language.
+
+---
+
+### Interpret the following metrics in your explanation:
+
+- **liquidity_risk**: Indicates how easily the coin can be traded. Use "low", "medium", or "high".
+- **price_change_score**:
+    - 0 = No significant price changes
+    - 1 = A notable increase in price in one time window (e.g., short-term)
+    - 2 = Strong increases in two time windows
+    - 3 = Consistent strong price momentum across short, medium, and long term
+- **volume_change_score**:
+    - 0 = No notable increase in trading activity
+    - 1 = A moderate spike in trading volume in one time window
+    - 2 = Sustained and strong trading activity over multiple periods
+- **cumulative_score**: Combined measure of price, volume, sentiment, trends, and other signals
+    - 0–2 = Weak signals overall
+    - 3–5 = Moderate momentum
+    - 6+ = Strong breakout potential or multi-signal alignment
+
+Your summary must turn these scores into natural language and explain what they mean for each coin.
 
 ---
 
@@ -202,8 +223,8 @@ Your task is to **summarize the data for each coin** using the available metrics
       "coin": "Coin Name",
       "liquidity_risk": "Low/Medium/High",
       "cumulative_score": "Score Value",
-      "recommendation": "Yes/No",
-      "reason": "A fluent, specific, data-driven explanation referencing key metrics (e.g., sentiment, volume, price change score, liquidity risk, and cumulative score)."
+      "recommendation": "Y",
+      "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores."
     }}
   ]
 }}
@@ -213,14 +234,13 @@ Your task is to **summarize the data for each coin** using the available metrics
 
 ### Instructions:
 
-- Do **not** make any recommendation judgment — always use \"recommendation\": \"Y\" by default.
-- Reference at least two specific metrics in the `reason`.
-- Be factual, objective, and consistent in tone.
-- Deduplicate coins by name or ID — only include the most recent or relevant entry.
-- Do **not** summarize the dataset as a whole.
-- Return **only** valid structured JSON as shown above.
+- Always use \"recommendation\": \"Y\".
+- Do NOT quote raw scores alone — always explain what they mean.
+- Use a fluent, confident tone. Avoid jargon or numbers without meaning.
+- Do NOT summarize the dataset as a whole.
+- Return only valid structured JSON.
 
-Now, here is the dataset:
+Here is the dataset:
 {dataset_json}
 """
 
@@ -255,6 +275,7 @@ Now, here is the dataset:
     except Exception as e:
         logging.error(f"Failed to complete GPT-4o summary: {e}")
         return {"recommendations": []}
+
 
 def gpt4o_analyze_and_recommend(df):
     """
