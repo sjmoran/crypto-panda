@@ -242,7 +242,8 @@ def monitor_coins_and_send_report():
                 digest_tickers,
                 trending_coins_scores,
                 santiment_slugs_df,
-                end_date
+                end_date,
+                score_usage
             ),
             coins_to_monitor
         )
