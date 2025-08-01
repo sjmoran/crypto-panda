@@ -217,7 +217,7 @@ def fetch_news_for_past_week(tickers_dict):
         logging.debug(f"Fetching news for {coin_name} ({coin_ticker})...")
 
         formatted_date = end_date.strftime('%Y%m%d')
-        week_start = (end_date - timedelta(days=3)).strftime('%m%d%Y')
+        week_start = (end_date - timedelta(days=7)).strftime('%m%d%Y')
         week_end = end_date.strftime('%m%d%Y')
         date_str = f"{week_start}-{week_end}"
 
