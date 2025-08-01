@@ -42,7 +42,7 @@ from config import (
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
     LOG_DIR,
-    COIN_PAPRIKA_API_KEY
+    COIN_PAPRIKA_API_KEY,FEAR_GREED_THRESHOLD
 )
 from helpers import (filter_active_and_ranked_coins)
 
