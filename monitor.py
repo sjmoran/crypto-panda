@@ -6,6 +6,10 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import traceback
+from collections import defaultdict
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from api_clients import (
     get_sundown_digest,
@@ -103,6 +107,23 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
             trending_coins_scores,
             santiment_slugs_df
         )
+        
+        score_usage["price_change_score"].append(int(result["price_change_score"]))
+        score_usage["volume_change_score"].append(int(result["volume_change_score"]))
+        score_usage["tweet_score"].append(1 if result["tweets"] != "None" else 0)
+        score_usage["sentiment_score"].append(result["sentiment_score"])
+        score_usage["surging_keywords_score"].append(result["surging_keywords_score"])
+        score_usage["consistent_growth"].append(1 if result["consistent_growth"] == "Yes" else 0)
+        score_usage["sustained_volume_growth"].append(1 if result["sustained_volume_growth"] == "Yes" else 0)
+        score_usage["fear_and_greed_index"].append(
+            1 if isinstance(result["fear_and_greed_index"], (int, float)) and result["fear_and_greed_index"] > FEAR_GREED_THRESHOLD else 0
+        )
+        score_usage["event_score"].append(1 if result["events"] > 0 else 0)
+        score_usage["digest_score"].append(result["news_digest_score"])
+        score_usage["trending_score"].append(result["trending_score"])
+        score_usage["santiment_score"].append(result["santiment_score"])
+        score_usage["cumulative_score"].append(result["cumulative_score"])
+        score_usage["cumulative_score_percentage"].append(result["cumulative_score_percentage"])
 
         save_result_to_csv(result)
         save_cumulative_score_to_aurora(result['coin_id'], result['coin_name'], result['cumulative_score_percentage'])
@@ -113,6 +134,62 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         logging.debug(f"Error processing {coin['name']} ({coin['id']}): {e}")
         logging.debug(traceback.format_exc())
         return None
+
+
+def summarize_scores(score_usage, output_dir="../logs/"):
+    """
+    Generates a summary and histogram plot for each type of score in the given score usage dictionary.
+
+    Parameters:
+        score_usage (dict): A dictionary where keys represent different types of scores and values
+                            are lists of score values.
+        output_dir (str): Directory to save summary and plots.
+
+    Saves:
+        - A summary text file: score_summary.txt
+        - Histogram plots for each score
+        - A correlation heatmap of the scores
+    """
+
+    os.makedirs(output_dir, exist_ok=True)
+    summary_file = os.path.join(output_dir, "score_summary.txt")
+
+    with open(summary_file, "w") as f:
+        f.write("--- SCORING SUMMARY ---\n\n")
+        for score_type, scores in score_usage.items():
+            s = pd.Series(scores)
+            summary = (
+                f"{score_type}:\n"
+                f"  Count: {len(s)}\n"
+                f"  Mean: {s.mean():.2f}\n"
+                f"  Std Dev: {s.std():.2f}\n"
+                f"  Min: {s.min()}, Max: {s.max()}\n"
+                f"  Non-zero count: {(s > 0).sum()} ({(s > 0).mean()*100:.2f}%)\n\n"
+            )
+            print(summary)
+            f.write(summary)
+
+            # Save histogram
+            plt.figure()
+            s.hist(bins=10)
+            plt.title(score_type)
+            plt.xlabel("Score")
+            plt.ylabel("Frequency")
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f"{score_type}_histogram.png"))
+            plt.close()
+
+    # Correlation heatmap
+    df_scores = pd.DataFrame(score_usage)
+    corr = df_scores.corr()
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title("Correlation between scoring components")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "score_correlation_heatmap.png"))
+    plt.close()
 
 def monitor_coins_and_send_report():
     """
@@ -173,6 +250,8 @@ def monitor_coins_and_send_report():
 
     try:
         if not df.empty:
+            score_usage = defaultdict(list)  # key = metric name, value = list of scores
+
             df = df[(df['liquidity_risk'].isin(['Low', 'Medium'])) & (df['cumulative_score_percentage'] > CUMULATIVE_SCORE_REPORTING_THRESHOLD)]
 
             logging.debug("DataFrame is not empty, processing report entries.")
@@ -223,6 +302,9 @@ def monitor_coins_and_send_report():
                     logging.debug(f"{results_file} has been deleted successfully.")
                 except Exception as e:
                     logging.debug(f"Failed to delete {results_file}: {e}")
+            
+            summarize_scores(score_usage, output_dir=LOG_DIR)
+
         else:
             logging.debug("No valid entries to report. DataFrame is empty.")
     except Exception as e:

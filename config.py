@@ -19,14 +19,30 @@ DATA_DIR = '../data/'
 
 # Keywords used to detect bullish or surge-related language in crypto news
 surge_words = [
-    "surge", "spike", "soar", "rocket", "skyrocket", "rally", "boom", "bullish", 
-    "explosion", "rise", "uptrend", "bull run", "moon", "parabolic", "spurt", 
-    "climb", "jump", "upswing", "gain", "increase", "growth", "rebound", 
-    "breakout", "spurt", "pump", "fly", "explode", "shoot up", "hike", 
-    "expand", "appreciate", "bull market", "peak", "momentum", "outperform", 
-    "spike up", "ascend", "elevation", "expansion", "revive", "uprising", 
-    "push up", "escalate", "rise sharply", "escalation", "recover", 
-    "inflation", "strengthen", "gain strength", "intensify"
+    # Existing
+    "surge", "spike", "soar", "rocket", "skyrocket", "rally", "boom", "bullish",
+    "explosion", "rise", "uptrend", "bull run", "moon", "parabolic", "spurt",
+    "climb", "jump", "upswing", "gain", "increase", "growth", "rebound",
+    "breakout", "pump", "fly", "explode", "shoot up", "hike",
+    "expand", "appreciate", "bull market", "peak", "momentum", "outperform",
+    "spike up", "ascend", "elevation", "expansion", "revive", "uprising",
+    "push up", "escalate", "rise sharply", "escalation", "recover",
+    "inflation", "strengthen", "gain strength", "intensify",
+    
+    # ✅ Crypto slang / community terms
+    "send it", "going vertical", "breaking out", "melting faces", "green candle",
+    "altseason", "bull flag", "supercycle", "squeeze", "ripping", "face melting",
+    
+    # ✅ Financial/technical analysis language
+    "overbought", "golden cross", "ascending triangle", "channel breakout",
+    "breakout pattern", "positive divergence", "momentum shift", "buy pressure",
+    
+    # ✅ Social/hype indicators
+    "FOMO", "buzzing", "hype", "trending", "hot", "popular", "buzzword", "popping",
+    
+    # ✅ Strong verbs and upward metaphors
+    "accelerate", "take off", "launch", "ignite", "trigger", "break resistance",
+    "snap resistance", "catalyst", "momentum build", "price discovery"
 ]
 
 # Daily trading volume thresholds to assess liquidity risk by market cap
