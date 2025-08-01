@@ -62,7 +62,7 @@ logging.basicConfig(
 
 logging.debug("Logging is set up and the application has started.")
 
-def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date):
+def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date, score_usage):
     """
     Processes a single coin, performing the following steps:
 
@@ -231,6 +231,8 @@ def monitor_coins_and_send_report():
     trending_coins_scores = fetch_trending_coins_scores()
     santiment_slugs_df = fetch_santiment_slugs()
 
+    score_usage = defaultdict(list)  # <-- Add here
+
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = executor.map(
             lambda coin: process_single_coin(
@@ -250,7 +252,6 @@ def monitor_coins_and_send_report():
 
     try:
         if not df.empty:
-            score_usage = defaultdict(list)  # key = metric name, value = list of scores
 
             df = df[(df['liquidity_risk'].isin(['Low', 'Medium'])) & (df['cumulative_score_percentage'] > CUMULATIVE_SCORE_REPORTING_THRESHOLD)]
 
