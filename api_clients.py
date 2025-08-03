@@ -19,6 +19,7 @@ from coinpaprika import client as Coinpaprika
 
 # Set Santiment API key for sanpy
 os.environ["SANAPIKEY"] = SAN_API_KEY
+san.ApiConfig.api_key = SAN_API_KEY
 
 client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
