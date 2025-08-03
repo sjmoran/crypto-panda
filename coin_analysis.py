@@ -263,7 +263,7 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
 
     # Calculate the cumulative score as a percentage
     cumulative_score_percentage = (cumulative_score / max_possible_score) * 100
-
+    
     # Build the explanation string, including Santiment data and price change explanation
     explanation = f"{coin_name} ({coin_id}) analysis: "
     explanation += f"Liquidity Risk: {liquidity_risk}, "
@@ -283,6 +283,13 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     explanation += f"Volume (24h): {most_recent_volume_24h}, "
     explanation += f"Cumulative Surge Score: {cumulative_score} ({cumulative_score_percentage:.2f}%)"
 
+    # Add top 3 news headlines
+    if not news_df.empty:
+        coin_news = news_df[news_df['coin'] == coin_name]
+        news_headlines = coin_news['title'].tolist()[:3]
+        explanation += f", Top News: " + "; ".join(news_headlines)
+    else:
+        explanation += ", Top News: No recent news found."
     return {
         "coin_id": coin_id,
         "coin_name": coin_name,
@@ -303,8 +310,10 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         "santiment_score": santiment_score,
         "cumulative_score": cumulative_score,
         "cumulative_score_percentage": round(cumulative_score_percentage, 2),  # Rounded to 2 decimal places
-        "explanation": explanation
+        "explanation": explanation,
+        "coin_news": coin_news.to_dict('records') if not news_df.empty else []
     }
+
 
 def match_coins_with_santiment(coin_name, santiment_slugs_df):
     """

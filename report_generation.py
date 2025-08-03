@@ -177,23 +177,24 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
 
     return html_content
 
-def gpt4o_summarize_each_coin(df):
-    """
-    Uses GPT-4o to generate a structured summary of each coin's metrics without making a recommendation.
-    The output format is kept identical, with "recommendation": "Y" by default to match pipeline expectations.
 
-    Parameters:
-        df (pd.DataFrame): The final DataFrame containing coin analysis results.
+import pandas as pd
+import json
+import logging
+import openai
+import re
+from multiprocessing import Pool, cpu_count
 
-    Returns:
-        dict: A structured summary for each coin with explanation, and a default "Y" recommendation.
-    """
+# Number of rows (coins) per batch
+ROWS_PER_BATCH = 50
+
+def gpt4o_summarize_batch(batch_df):
     try:
-        df_json = df.to_dict(orient='records')
+        df_json = batch_df.to_dict(orient='records')
         dataset_json = json.dumps(df_json, indent=2).replace('%', '%%')
     except Exception as e:
-        logging.error(f"Failed to serialize df_json: {e}")
-        dataset_json = "{}"
+        logging.error(f"Failed to serialize batch: {e}")
+        return {"recommendations": []}
 
     prompt = f"""
 You are provided with structured analysis data for multiple cryptocurrency coins.
@@ -232,7 +233,7 @@ Your summary must turn these scores into natural language and explain what they 
       "coin": "Coin Name",
       "liquidity_risk": "Low/Medium/High",
       "cumulative_score": "Score Value",
-      "recommendation": "Yes/No",
+      "recommendation": "Yes",
       "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores."
     }}
   ]
@@ -254,37 +255,56 @@ Here is the dataset:
 """
 
     def api_call():
-        response = openai.ChatCompletion.create(
+        return openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            n=1,
-            stop=None,
             temperature=0.0
         )
-        return response
 
     try:
+        from api_clients import api_call_with_retries  # Ensure this is imported where needed
         response = api_call_with_retries(api_call)
-        gpt_message_content = response['choices'][0]['message']['content']
+        content = response['choices'][0]['message']['content']
 
-        logging.debug("Raw GPT response:\n%s", gpt_message_content)
-
-        json_match = re.search(r'```json(.*?)```', gpt_message_content, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(1).strip()
-            logging.debug("Extracted JSON content:\n%s", json_content)
-
-            parsed_data = json.loads(json_content)
-            logging.debug(f"Parsed JSON data: {parsed_data}")
-            return parsed_data
-
-        logging.debug("No JSON content found in the GPT response.")
-        return {"recommendations": []}
+        match = re.search(r'```json(.*?)```', content, re.DOTALL)
+        if match:
+            json_data = json.loads(match.group(1).strip())
+            return json_data
+        else:
+            logging.warning("No JSON block found in GPT response.")
+            return {"recommendations": []}
 
     except Exception as e:
-        logging.error(f"Failed to complete GPT-4o summary: {e}")
+        logging.error(f"GPT-4o batch failed: {e}")
         return {"recommendations": []}
 
+
+def gpt4o_summarize_each_coin(df, rows_per_batch=ROWS_PER_BATCH, num_processes=None):
+    """
+    Process a DataFrame of coin metrics in parallel, batching by number of rows.
+
+    Args:
+        df (pd.DataFrame): Coin metrics.
+        rows_per_batch (int): Number of coins per GPT call.
+        num_processes (int or None): Number of processes to use (default: auto).
+
+    Returns:
+        dict: Combined GPT-generated recommendations for all coins.
+    """
+    batches = [df.iloc[i:i + rows_per_batch] for i in range(0, len(df), rows_per_batch)]
+
+    if num_processes is None:
+        num_processes = min(cpu_count(), len(batches))
+
+    with Pool(num_processes) as pool:
+        results = pool.map(gpt4o_summarize_batch, batches)
+
+    all_recommendations = []
+    for result in results:
+        if result and 'recommendations' in result:
+            all_recommendations.extend(result['recommendations'])
+
+    return {"recommendations": all_recommendations}
 
 def gpt4o_analyze_and_recommend(df):
     """
