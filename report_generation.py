@@ -242,21 +242,31 @@ def gpt4o_summarize_batch(batch_df):
     ```
 
     ---
-
     ### Instructions:
 
-    - Always use \"recommendation\": \"Yes\".
+    - Use "recommendation": "Yes" if the coin shows strong potential based on a combination of:
+        - High cumulative score (≥ 6),
+        - Price and volume momentum (≥ 2 on either),
+        - Low or medium liquidity risk,
+        - And positive or surge-indicating news sentiment.
+    - Use "recommendation": "No" if the coin shows weak signals overall:
+        - Low cumulative score (≤ 2),
+        - No recent momentum in price or volume,
+        - Negative news or sentiment, or high liquidity risk.
+    - Use "recommendation": "No" if there is insufficient data or nothing notable.
     - If trend_conflict is “Yes”, describe it as a possible early-stage breakout, not a red flag.
     - Do NOT quote raw scores alone — always explain what they mean.
     - Use a fluent, confident tone. Avoid jargon or numbers without meaning.
     - Do NOT summarize the dataset as a whole.
     - Summarise any news provided for the coin.
     - Return only valid structured JSON.
+    - Base your decision holistically, but justify it with clear explanation of the coin’s price action, trading volume, sentiment, and any notable trends or news.
 
     Here is the dataset:
     {dataset_json}
     """
 
+    print(dataset_json)
     def api_call():
         return openai.ChatCompletion.create(
             model="gpt-4o",
