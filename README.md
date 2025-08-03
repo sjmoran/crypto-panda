@@ -46,7 +46,7 @@ Powered by Python, OpenAI's GPT-4o, Santiment, and CoinPaprika APIs — it's des
 
 ## 📊 Full Metric Reference Table
 
-This table outlines all the metrics analyzed for each cryptocurrency in your pipeline, grouped by theme and annotated with their range, usage, and description.
+This table outlines all the metrics analyzed for each cryptocurrency, grouped by theme and annotated with their range, usage, and description.
 
 | **Category**        | **Metric**                            | **Key**                                   | **Range / Type**       | **Used In**                     | **Description** |
 |---------------------|----------------------------------------|--------------------------------------------|-------------------------|----------------------------------|-----------------|
