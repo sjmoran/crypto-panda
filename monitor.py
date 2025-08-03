@@ -115,9 +115,14 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         score_usage["surging_keywords_score"].append(result["surging_keywords_score"])
         score_usage["consistent_growth"].append(1 if result["consistent_growth"] == "Yes" else 0)
         score_usage["sustained_volume_growth"].append(1 if result["sustained_volume_growth"] == "Yes" else 0)
-        score_usage["fear_and_greed_index"].append(
-            1 if isinstance(result["fear_and_greed_index"], (int, float)) and result["fear_and_greed_index"] > FEAR_GREED_THRESHOLD else 0
-        )
+        try:
+            fear_greed_value = int(result["fear_and_greed_index"])
+            score_usage["fear_and_greed_index"].append(
+                1 if fear_greed_value > FEAR_GREED_THRESHOLD else 0
+            )
+        except (ValueError, TypeError, KeyError) as e:
+            logging.debug(f"Failed to process fear_and_greed_index: {e}")
+            score_usage["fear_and_greed_index"].append(0)
         score_usage["event_score"].append(1 if result["events"] > 0 else 0)
         score_usage["digest_score"].append(result["news_digest_score"])
         score_usage["trending_score"].append(result["trending_score"])

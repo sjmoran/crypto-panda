@@ -154,6 +154,16 @@ def fetch_coin_events(coin_id):
         logging.debug(f"Error fetching events for {coin_id}: {e}")
         return []
 
+def has_consistent_monthly_growth(historical_df):
+    """
+    Returns True if the given historical data shows consistent monthly growth,
+    defined as at least 18 of the last 30 days having a positive price change.
+    """
+    historical_df['price_change'] = historical_df['price'].pct_change()
+    last_month_df = historical_df.tail(30)
+    rising_days = last_month_df[last_month_df['price_change'] > 0].shape[0]
+    return rising_days >= 18
+
 def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending_coins_scores, santiment_slugs_df):
     """
     Analyzes a given cryptocurrency and returns a dictionary with various analysis scores, 
@@ -224,6 +234,9 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     recent_events_count = sum(1 for event in events if datetime.strptime(event['date'], '%Y-%m-%d') <= datetime.now())
     event_score = 1 if recent_events_count > 0 else 0
 
+    consistent_monthly_growth = has_consistent_monthly_growth(historical_df_medium_term)
+    consistent_monthly_growth_score = 1 if consistent_monthly_growth else 0
+
     # Classify market cap
     market_cap_class = classify_market_cap(most_recent_market_cap)
 
@@ -251,19 +264,22 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     # Incorporate Santiment data into the cumulative score
     santiment_score, santiment_explanation = compute_santiment_score_with_thresholds(santiment_data)
 
+    trend_conflict_score = 1 if consistent_monthly_growth_score and not consistent_growth_score else 0
+
     # Calculate cumulative score and its percentage of the maximum score
     cumulative_score = (
-        volume_score + tweet_score + consistent_growth_score + sustained_volume_growth_score + 
-        fear_and_greed_score + event_score + price_change_score + sentiment_score + surge_score +
-        digest_score + trending_score + santiment_score
+    volume_score + tweet_score + consistent_growth_score + sustained_volume_growth_score + 
+    fear_and_greed_score + event_score + price_change_score + sentiment_score + surge_score +
+    digest_score + trending_score + santiment_score + consistent_monthly_growth_score +
+    trend_conflict_score
     )
 
     # Maximum possible score (adjust as necessary)
-    max_possible_score = 14
+    max_possible_score = 16
 
     # Calculate the cumulative score as a percentage
     cumulative_score_percentage = (cumulative_score / max_possible_score) * 100
-    
+
     # Build the explanation string, including Santiment data and price change explanation
     explanation = f"{coin_name} ({coin_id}) analysis: "
     explanation += f"Liquidity Risk: {liquidity_risk}, "
@@ -282,7 +298,11 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     explanation += f"Market Cap: {most_recent_market_cap}, "
     explanation += f"Volume (24h): {most_recent_volume_24h}, "
     explanation += f"Cumulative Surge Score: {cumulative_score} ({cumulative_score_percentage:.2f}%)"
-
+    explanation += f"Consistent Monthly Growth: {'Yes' if consistent_monthly_growth_score else 'No'}, "
+    explanation += f"Trend Conflict: {'Yes' if trend_conflict_score else 'No'} (Monthly growth without short-term support), "
+    if trend_conflict_score:
+        explanation += "⚠️ Potential breakout opportunity: consistent monthly growth detected without short-term trend confirmation. "
+    
     # Add top 3 news headlines
     if not news_df.empty:
         coin_news = news_df[news_df['coin'] == coin_name]
@@ -290,6 +310,8 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         explanation += f", Top News: " + "; ".join(news_headlines)
     else:
         explanation += ", Top News: No recent news found."
+   
+  
     return {
         "coin_id": coin_id,
         "coin_name": coin_name,
@@ -311,7 +333,8 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         "cumulative_score": cumulative_score,
         "cumulative_score_percentage": round(cumulative_score_percentage, 2),  # Rounded to 2 decimal places
         "explanation": explanation,
-        "coin_news": coin_news.to_dict('records') if not news_df.empty else []
+        "coin_news": coin_news.to_dict('records') if not news_df.empty else [],
+        "trend_conflict": "Yes" if trend_conflict_score else "No",
     }
 
 
