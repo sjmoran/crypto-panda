@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from api_clients import client, api_call_with_retries,fetch_historical_ticker_data,fetch_santiment_data_for_coin,fetch_twitter_data,fetch_fear_and_greed_index
 
 MAX_POSSIBLE_SCORE = 22 # Number of possible analysis scores
+import re
 
 def analyze_volume_change(volume_data, market_cap, volatility):
     """
@@ -413,30 +414,46 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     }
 
 
-def match_coins_with_santiment(coin_name, santiment_slugs_df):
+from fuzzywuzzy import process
+
+def match_coins_with_santiment(coin_name, santiment_slugs_df, threshold=90):
     """
-    Matches a given coin name with the Santiment slugs dataframe.
-    
+    Matches a given coin name with the Santiment slugs dataframe using exact then fuzzy match.
+
     Parameters:
     coin_name (str): The name of the coin to match.
     santiment_slugs_df (pd.DataFrame): The dataframe containing Santiment slugs and normalized names.
-    
+    threshold (int): The similarity threshold for fuzzy matching (0-100).
+
     Returns:
     str: The Santiment slug if a match is found, else None.
-    """    
-    # Check if the 'name_normalized' column exists in the dataframe
+    """
     if 'name_normalized' not in santiment_slugs_df.columns:
         logging.warning(f"'name_normalized' column not found in the Santiment slugs dataframe.")
         return None
 
-    # Look for exact matches in the normalized names
-    match = santiment_slugs_df[santiment_slugs_df['name_normalized'] == coin_name]
-    
+    print("Top 10 Santiment coin names and their normalized forms:")
+    print(santiment_slugs_df[['name', 'slug', 'name_normalized']].head(10))
+
+    coin_name_normalized = re.sub(r'\W+', '', coin_name.lower())
+
+    # Exact match
+    match = santiment_slugs_df[santiment_slugs_df['name_normalized'] == coin_name_normalized]
     if not match.empty:
-        return match['slug'].values[0]  # Return the first matching slug
-    else:
-        logging.info(f"No match found for {coin_name} in Santiment slugs.")
+        return match['slug'].values[0]
+
+    # Fuzzy match fallback
+    choices = santiment_slugs_df['name_normalized'].tolist()
+    best_match, score = process.extractOne(coin_name_normalized, choices)
     
+    if score >= threshold:
+        matched_row = santiment_slugs_df[santiment_slugs_df['name_normalized'] == best_match]
+        if not matched_row.empty:
+            return matched_row['slug'].values[0]
+        else:
+            logging.warning(f"Fuzzy matched name '{best_match}' not found in DataFrame.")
+    
+    logging.info(f"No suitable match found for {coin_name} (normalized: {coin_name_normalized})")
     return None
 
 def get_price_change_thresholds(market_cap_class, volatility_class):
