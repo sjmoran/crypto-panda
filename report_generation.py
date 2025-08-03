@@ -560,7 +560,7 @@ def gpt4o_summarize_digest_and_extract_tickers(digest_text):
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             n=1,
             stop=None,

@@ -191,7 +191,7 @@ def compute_santiment_surge_metrics(santiment_data):
     dev_activity = santiment_data.get("dev_activity_increase", 0)
     active_addresses_change = santiment_data.get("daily_active_addresses_increase", 0)
     whale_tx_count = santiment_data.get("whale_transaction_count_100k_usd_to_inf", 0)
-    volume_change = santiment_data.get("transaction_volume_usd_change_1d", 0)
+    volume_change = santiment_data.get("transaction_volume_usd", 0)
     sentiment_weighted = santiment_data.get("sentiment_weighted_total", 0)
 
     exchange_flow_delta = exchange_outflow - exchange_inflow  # Net outflow = bullish
