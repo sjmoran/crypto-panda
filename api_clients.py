@@ -305,7 +305,6 @@ def fetch_trending_coins_scores():
 
     return trending_coins_scores
 
-
 def fetch_fear_and_greed_index():
     """
     Fetches the current Fear and Greed Index value from the Alternative.me API.
@@ -315,12 +314,27 @@ def fetch_fear_and_greed_index():
     """
     try:
         response = api_call_with_retries(requests.get, 'https://api.alternative.me/fng/')
-        data = response.json()
-        return int(data['data'][0]['value'])
-    except Exception as e:
-        logging.debug(f"Error fetching Fear and Greed Index: {e}")
-        return None
+        logging.debug(f"Fear and Greed API response status: {response.status_code}")
+        logging.debug(f"Fear and Greed API raw response: {response.text}")
 
+        response.raise_for_status()
+        data = response.json()
+
+        if 'data' in data and isinstance(data['data'], list) and len(data['data']) > 0:
+            value = int(data['data'][0]['value'])
+            logging.debug(f"Fear and Greed Index value: {value}")
+            return value
+        else:
+            logging.debug("Fear and Greed Index data missing or malformed in response.")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        logging.debug(f"HTTP request error fetching Fear and Greed Index: {e}")
+    except ValueError as e:
+        logging.debug(f"Value error when parsing Fear and Greed Index: {e}")
+    except Exception as e:
+        logging.debug(f"Unexpected error fetching Fear and Greed Index: {e}")
+    return None
 
 def fetch_coin_events(coin_id):
     """
