@@ -21,6 +21,8 @@ from coinpaprika import client as Coinpaprika
 os.environ["SANAPIKEY"] = SAN_API_KEY
 san.ApiConfig.api_key = SAN_API_KEY
 
+print("Santiment key in use:", san.ApiConfig.api_key)
+
 client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
 def api_call_with_retries(api_function, *args, **kwargs):
