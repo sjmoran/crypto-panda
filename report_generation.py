@@ -198,7 +198,7 @@ def gpt4o_summarize_batch(batch_df):
     prompt = f"""
     You are provided with structured analysis data for multiple cryptocurrency coins.
 
-    Your task is to **summarize the data for each coin** using the available metrics. You are NOT deciding whether to recommend the coin. Instead, describe the coin's performance in intuitive, human-readable language.
+    Your task is to **summarize the data for each coin** using the available metrics. You are NOT deciding whether to recommend the coin. Instead, describe the coin's performance in intuitive, human-readable language. You should also summarise any news on the coin.
 
     ---
 
@@ -235,7 +235,7 @@ def gpt4o_summarize_batch(batch_df):
         "liquidity_risk": "Low/Medium/High",
         "cumulative_score": "Score Value",
         "recommendation": "Yes",
-        "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores."
+        "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores. Also summarize any news on the coin."
         }}
     ]
     }}
@@ -250,6 +250,7 @@ def gpt4o_summarize_batch(batch_df):
     - Do NOT quote raw scores alone — always explain what they mean.
     - Use a fluent, confident tone. Avoid jargon or numbers without meaning.
     - Do NOT summarize the dataset as a whole.
+    - Summarise any news provided for the coin.
     - Return only valid structured JSON.
 
     Here is the dataset:
