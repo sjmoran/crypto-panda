@@ -27,6 +27,7 @@ import logging
 import openai
 import re
 from multiprocessing import Pool, cpu_count
+from openai import ChatCompletion
 
 
 def generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations):
@@ -189,6 +190,8 @@ ROWS_PER_BATCH = 50
 
 def gpt4o_summarize_batch(batch_df):
     try:
+        # Replace NaN with None for serialization
+        batch_df = batch_df.where(batch_df.notnull(), None)
         df_json = batch_df.to_dict(orient='records')
         dataset_json = json.dumps(df_json, indent=2).replace('%', '%%')
     except Exception as e:
@@ -196,86 +199,84 @@ def gpt4o_summarize_batch(batch_df):
         return {"recommendations": []}
 
     prompt = f"""
-    You are provided with structured analysis data for multiple cryptocurrency coins.
+You are provided with structured analysis data for multiple cryptocurrency coins.
 
-    Your task is to **summarize the data for each coin** using the available metrics. You are NOT deciding whether to recommend the coin. Instead, describe the coin's performance in intuitive, human-readable language. You should also summarise any news on the coin.
+Your task is to **summarize the data for each coin** using the available metrics and recommend "Yes" or "No".
 
-    ---
+---
 
-    ### Interpret the following metrics in your explanation:
+### Interpret the following metrics:
 
-    - **liquidity_risk**: Indicates how easily the coin can be traded. Use "low", "medium", or "high".
-    - **price_change_score**:
-        - 0 = No significant price changes
-        - 1 = A notable increase in price in one time window (e.g., short-term)
-        - 2 = Strong increases in two time windows
-        - 3 = Consistent strong price momentum across short, medium, and long term
-    - **volume_change_score**:
-        - 0 = No notable increase in trading activity
-        - 1 = A moderate spike in trading volume in one time window
-        - 2 = Sustained and strong trading activity over multiple periods
-    - **cumulative_score**: Combined measure of price, volume, sentiment, trends, and other signals
-        - 0–2 = Weak signals overall
-        - 3–5 = Moderate momentum
-        - 6+ = Strong breakout potential or multi-signal alignment
-    - **trend_conflict**: 
-        - "Yes" = The coin shows consistent monthly growth but lacks short-term support — this may indicate a potential early-stage breakout or lagging price action.
+- **liquidity_risk**: Indicates how easily the coin can be traded. Use "low", "medium", or "high".
+- **price_change_score**:
+    - 0 = No significant price changes
+    - 1 = A notable increase in price in one time window (e.g., short-term)
+    - 2 = Strong increases in two time windows
+    - 3 = Consistent strong price momentum across short, medium, and long term
+- **volume_change_score**:
+    - 0 = No notable increase in trading activity
+    - 1 = A moderate spike in trading volume in one time window
+    - 2 = Sustained and strong trading activity over multiple periods
+- **cumulative_score** (out of 22): Combined measure of price, volume, sentiment, news, whale activity, and more.
+    - 0–5 = Weak overall signals
+    - 6–11 = Moderate momentum or mixed indicators
+    - 12+ = Strong breakout potential or sustained multi-signal alignment
+- **trend_conflict**: 
+    - "Yes" = The coin shows consistent monthly growth but lacks short-term support — may indicate early-stage breakout or lagging price action.
 
-    Your summary must turn these scores into natural language and explain what they mean for each coin.
+---
 
-    ---
+### Output Format (JSON Only):
 
-    ### Output Format (Structured JSON Only):
-
-    ```json
+```json
+{{
+"recommendations": [
     {{
-    "recommendations": [
-        {{
-        "coin": "Coin Name",
-        "liquidity_risk": "Low/Medium/High",
-        "cumulative_score": "Score Value",
-        "recommendation": "Yes",
-        "reason": "An intuitive summary using natural language to explain price, volume, sentiment, and liquidity scores. Also summarize any news on the coin."
-        }}
-    ]
+    "coin": "Coin Name",
+    "liquidity_risk": "Low/Medium/High",
+    "cumulative_score": "Score Value",
+    "recommendation": "Yes" or "No",
+    "reason": "An intuitive summary explaining the coin’s price, volume, sentiment, trend, and any notable news."
     }}
-    ```
+]
+}}
+```
 
-    ---
-    ### Instructions:
+---
 
-    - Use "recommendation": "Yes" if the coin shows strong potential based on a combination of:
-        - High cumulative score (≥ 6),
-        - Price and volume momentum (≥ 2 on either),
-        - Low or medium liquidity risk,
-        - And positive or surge-indicating news sentiment.
-    - Use "recommendation": "No" if the coin shows weak signals overall:
-        - Low cumulative score (≤ 2),
-        - No recent momentum in price or volume,
-        - Negative news or sentiment, or high liquidity risk.
-    - Use "recommendation": "No" if there is insufficient data or nothing notable.
-    - If trend_conflict is “Yes”, describe it as a possible early-stage breakout, not a red flag.
-    - Do NOT quote raw scores alone — always explain what they mean.
-    - Use a fluent, confident tone. Avoid jargon or numbers without meaning.
-    - Do NOT summarize the dataset as a whole.
-    - Summarise any news provided for the coin.
-    - Return only valid structured JSON.
-    - Base your decision holistically, but justify it with clear explanation of the coin’s price action, trading volume, sentiment, and any notable trends or news.
+### Instructions:
 
-    Here is the dataset:
-    {dataset_json}
-    """
+- Use "recommendation": "Yes" if the coin shows strong potential:
+    - High cumulative score (≥ 6)
+    - Price/volume momentum (≥ 2)
+    - Low/Medium liquidity risk
+    - Positive or surge-indicating news sentiment
+- Use "recommendation": "No" if:
+    - Low cumulative score (≤ 2)
+    - No recent momentum
+    - Negative news or high liquidity risk
+    - Or insufficient/notable data
+- Treat trend_conflict = "Yes" as a possible early-stage breakout.
+- Never quote raw scores without interpretation.
+- Be fluent and confident. Avoid jargon or raw numbers.
+- Don’t summarize the dataset as a whole.
+- Include a short summary of any news.
+- Return only valid JSON.
+
+Here is the dataset:
+{dataset_json}
+"""
 
     print(dataset_json)
+
     def api_call():
-        return openai.ChatCompletion.create(
+        return ChatCompletion.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
 
     try:
-        from api_clients import api_call_with_retries  # Ensure this is imported where needed
         response = api_call_with_retries(api_call)
         content = response['choices'][0]['message']['content']
 
