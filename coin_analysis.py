@@ -288,7 +288,7 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     explanation += f"Tweets: {'Yes' if tweet_score else 'None'}, "
     explanation += f"Consistent Price Growth: {'Yes' if consistent_growth_score else 'No'}, "
     explanation += f"Sustained Volume Growth: {'Yes' if sustained_volume_growth_score else 'No'}, "
-    explanation += f"Fear and Greed Index: {fear_and_greed_index if fear_and_greed_index is not None else 'N/A'}, "
+    explanation += f"Fear and Greed Index: {fear_and_greed_index if isinstance(fear_and_greed_index, int) else 'N/A'}, "    
     explanation += f"Recent Events: {recent_events_count}, "
     explanation += f"Sentiment Score: {sentiment_score}, "
     explanation += f"Surge Keywords Score: {surge_score} ({surge_explanation}), "
@@ -322,7 +322,7 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         "tweets": len(twitter_df) if tweet_score else "None",
         "consistent_growth": "Yes" if consistent_growth_score else "No",
         "sustained_volume_growth": "Yes" if sustained_volume_growth_score else "No",
-        "fear_and_greed_index": fear_and_greed_index if fear_and_greed_index is not None else "N/A",
+        "fear_and_greed_index": int(fear_and_greed_index) if fear_and_greed_index is not None else None,
         "events": recent_events_count,
         "sentiment_score": sentiment_score,
         "surging_keywords_score": surge_score,

@@ -173,6 +173,7 @@ def summarize_scores(score_usage, output_dir="../logs/"):
             )
             print(summary)
             f.write(summary)
+            print("Fear and Greed index raw values:", score_usage["fear_and_greed_index"])
 
             # Save histogram
             plt.figure()

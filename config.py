@@ -74,7 +74,7 @@ MAX_RETRIES = 2                         # Number of retries for failed API reque
 BACKOFF_FACTOR = 2                      # Delay multiplier between retries (e.g., 2, 4, 8 seconds)
 
 # Only include coins in reports if they exceed this cumulative score threshold
-CUMULATIVE_SCORE_REPORTING_THRESHOLD = 40
+CUMULATIVE_SCORE_REPORTING_THRESHOLD = 60
 
 # Aurora PostgreSQL configuration (used to log or retrieve coin scores)
 AURORA_HOST = os.getenv('AURORA_HOST')              # Database host endpoint
