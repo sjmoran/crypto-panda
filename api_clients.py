@@ -14,8 +14,11 @@ import pandas as pd
 import datetime 
 import traceback
 from datetime import datetime, timedelta
-from config import COIN_PAPRIKA_API_KEY
+from config import COIN_PAPRIKA_API_KEY,SAN_API_KEY
 from coinpaprika import client as Coinpaprika
+
+# Set Santiment API key for sanpy
+os.environ["SANAPIKEY"] = SAN_API_KEY
 
 client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
@@ -88,14 +91,21 @@ def fetch_twitter_data(coin_id):
 
 def fetch_santiment_data_for_coin(coin_slug):
     """
-    Fetches relevant Santiment data (social volume, dev activity, daily active addresses, etc.) for a specific coin.
-    If the Santiment API fails, returns an empty result, allowing the rest of the code to execute.
+    Fetches relevant Santiment data for a specific coin, including:
+    - Development activity increase
+    - Daily active addresses change
+    - Exchange inflow and outflow
+    - Whale transaction count
+    - Transaction volume change
+    - Weighted sentiment score
+
+    If the API call fails, returns default values to allow the rest of the pipeline to proceed.
 
     Parameters:
         coin_slug (str): The Santiment slug of the cryptocurrency.
 
     Returns:
-        dict: A dictionary with fetched Santiment metrics data or default values if the API call fails.
+        dict: A dictionary with fetched Santiment metrics data or default values if unavailable.
     """
     try:
         end_date = datetime.now().strftime('%Y-%m-%d')
@@ -103,27 +113,21 @@ def fetch_santiment_data_for_coin(coin_slug):
 
         logging.debug(f"Fetching Santiment data for {coin_slug} from {start_date} to {end_date}")
 
-        # Fetch development activity
-        dev_activity_increase = fetch_santiment_metric('30d_moving_avg_dev_activity_change_1d', coin_slug, start_date, end_date)
-        logging.debug(f"Development activity data for {coin_slug}: {dev_activity_increase}")
-
-        # Since dev_activity_increase is a float, no need to check for a DataFrame
-        if dev_activity_increase is None or not isinstance(dev_activity_increase, (float, int)):
-            logging.debug(f"No valid development activity data for {coin_slug}, defaulting to 0.0")
-            dev_activity_increase = 0.0
-
-        # Fetch daily active addresses
-        daily_active_addresses_increase = fetch_santiment_metric('active_addresses_24h_change_30d', coin_slug, start_date, end_date)
-        logging.debug(f"Daily active addresses data for {coin_slug}: {daily_active_addresses_increase}")
-
-        # Handle float values or None as returned by the API
-        if daily_active_addresses_increase is None or not isinstance(daily_active_addresses_increase, (float, int)):
-            logging.debug(f"No valid daily active addresses data for {coin_slug}, defaulting to 0.0")
-            daily_active_addresses_increase = 0.0
+        def safe_fetch(metric_name):
+            value = fetch_santiment_metric(metric_name, coin_slug, start_date, end_date)
+            if value is None or not isinstance(value, (float, int)):
+                logging.debug(f"Metric {metric_name} for {coin_slug} is invalid or missing. Defaulting to 0.0")
+                return 0.0
+            return float(value)
 
         return {
-            "dev_activity_increase": float(dev_activity_increase),
-            "daily_active_addresses_increase": float(daily_active_addresses_increase),
+            "dev_activity_increase": safe_fetch('30d_moving_avg_dev_activity_change_1d'),
+            "daily_active_addresses_increase": safe_fetch('active_addresses_24h_change_30d'),
+            "exchange_inflow_usd": safe_fetch('exchange_inflow_usd_1d'),
+            "exchange_outflow_usd": safe_fetch('exchange_outflow_usd_1d'),
+            "whale_transaction_count_100k_usd_to_inf": safe_fetch('whale_transaction_count_100k_usd_to_inf_1d'),
+            "transaction_volume_usd_change_1d": safe_fetch('transaction_volume_usd_change_1d'),
+            "sentiment_weighted_total": safe_fetch('sentiment_weighted_total_1d'),
         }
 
     except Exception as e:
@@ -132,9 +136,13 @@ def fetch_santiment_data_for_coin(coin_slug):
         return {
             "dev_activity_increase": 0.0,
             "daily_active_addresses_increase": 0.0,
+            "exchange_inflow_usd": 0.0,
+            "exchange_outflow_usd": 0.0,
+            "whale_transaction_count_100k_usd_to_inf": 0.0,
+            "transaction_volume_usd_change_1d": 0.0,
+            "sentiment_weighted_total": 0.0,
         }
-
-
+    
 def get_sundown_digest():
     """
     Fetches the Sundown Digest from CryptoNews API.

@@ -10,6 +10,8 @@ from config import (  # Importing relevant constants from the config file
 from datetime import datetime, timedelta
 from api_clients import client, api_call_with_retries,fetch_historical_ticker_data,fetch_santiment_data_for_coin,fetch_twitter_data,fetch_fear_and_greed_index
 
+MAX_POSSIBLE_SCORE = 22 # Number of possible analysis scores
+
 def analyze_volume_change(volume_data, market_cap, volatility):
     """
     Analyze the volume changes of a cryptocurrency over three time periods.
@@ -164,6 +166,65 @@ def has_consistent_monthly_growth(historical_df):
     rising_days = last_month_df[last_month_df['price_change'] > 0].shape[0]
     return rising_days >= 18
 
+def compute_santiment_surge_metrics(santiment_data):
+    """
+    Computes surge-related scores from selected Santiment metrics.
+
+    Parameters:
+        santiment_data (dict): Dictionary of raw Santiment metrics for a coin.
+
+    Returns:
+        tuple: (score: int, explanation: str)
+    """
+    thresholds = {
+        'exchange_flow_delta': 1_000_000,  # USD
+        'active_addresses_increase': 10,   # %
+        'dev_activity_increase': 10,       # %
+        'whale_tx_count': 5,               # count
+        'volume_change': 10,               # %
+        'sentiment_score': 0.2,            # compound
+    }
+
+    # Extract values from unified Santiment keys
+    exchange_inflow = santiment_data.get("exchange_inflow_usd", 0)
+    exchange_outflow = santiment_data.get("exchange_outflow_usd", 0)
+    dev_activity = santiment_data.get("dev_activity_increase", 0)
+    active_addresses_change = santiment_data.get("daily_active_addresses_increase", 0)
+    whale_tx_count = santiment_data.get("whale_transaction_count_100k_usd_to_inf", 0)
+    volume_change = santiment_data.get("transaction_volume_usd_change_1d", 0)
+    sentiment_weighted = santiment_data.get("sentiment_weighted_total", 0)
+
+    exchange_flow_delta = exchange_outflow - exchange_inflow  # Net outflow = bullish
+
+    score = 0
+    explanation = []
+
+    if exchange_flow_delta > thresholds['exchange_flow_delta']:
+        score += 1
+        explanation.append(f"🔁 Net exchange outflow of ${exchange_flow_delta:,.0f} signals accumulation")
+
+    if active_addresses_change > thresholds['active_addresses_increase']:
+        score += 1
+        explanation.append(f"📈 Active addresses increased {active_addresses_change:.2f}%")
+
+    if dev_activity > thresholds['dev_activity_increase']:
+        score += 1
+        explanation.append(f"🛠️ Dev activity increase = {dev_activity:.2f}%")
+
+    if whale_tx_count > thresholds['whale_tx_count']:
+        score += 1
+        explanation.append(f"🐋 Whale tx count = {whale_tx_count}")
+
+    if volume_change > thresholds['volume_change']:
+        score += 1
+        explanation.append(f"💸 Tx volume surged {volume_change:.2f}%")
+
+    if sentiment_weighted > thresholds['sentiment_score']:
+        score += 1
+        explanation.append(f"🎯 Weighted sentiment = {sentiment_weighted:.2f} (positive)")
+
+    return score, " | ".join(explanation) if explanation else "No Santiment surge signals detected."
+
 def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending_coins_scores, santiment_slugs_df):
     """
     Analyzes a given cryptocurrency and returns a dictionary with various analysis scores, 
@@ -200,8 +261,18 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     if santiment_slug:
         santiment_data = fetch_santiment_data_for_coin(santiment_slug)
     else:
-        santiment_data = {"dev_activity_increase": 0, "daily_active_addresses_increase": 0}
+        santiment_data = {
+        "dev_activity_increase": 0.0,
+        "daily_active_addresses_increase": 0.0,
+        "exchange_inflow_usd": 0.0,
+        "exchange_outflow_usd": 0.0,
+        "whale_transaction_count_100k_usd_to_inf": 0.0,
+        "transaction_volume_usd_change_1d": 0.0,
+        "sentiment_weighted_total": 0.0,
+    }
 
+    santiment_score, santiment_explanation = compute_santiment_score_with_thresholds(santiment_data)
+    santiment_surge_score, santiment_surge_explanation = compute_santiment_surge_metrics(santiment_data)
 
     if 'price' not in historical_df_long_term.columns or historical_df_long_term.empty:
         logging.debug(f"No valid price data available for {coin_id}.")
@@ -273,9 +344,10 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     digest_score + trending_score + santiment_score + consistent_monthly_growth_score +
     trend_conflict_score
     )
+    cumulative_score += santiment_surge_score
 
     # Maximum possible score (adjust as necessary)
-    max_possible_score = 16
+    max_possible_score = MAX_POSSIBLE_SCORE
 
     # Calculate the cumulative score as a percentage
     cumulative_score_percentage = (cumulative_score / max_possible_score) * 100
@@ -310,7 +382,8 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         explanation += f", Top News: " + "; ".join(news_headlines)
     else:
         explanation += ", Top News: No recent news found."
-   
+    explanation += f" | Santiment Surge Score: {santiment_surge_score} ({santiment_surge_explanation})"
+
   
     return {
         "coin_id": coin_id,
@@ -330,6 +403,8 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         "trending_score": trending_score,
         "liquidity_risk": liquidity_risk,
         "santiment_score": santiment_score,
+        "santiment_surge_score": santiment_surge_score,  # 🆕 NEW FIELD
+        "santiment_surge_explanation": santiment_surge_explanation,  # 🆕 NEW FIELD
         "cumulative_score": cumulative_score,
         "cumulative_score_percentage": round(cumulative_score_percentage, 2),  # Rounded to 2 decimal places
         "explanation": explanation,

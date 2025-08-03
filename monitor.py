@@ -115,7 +115,7 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         score_usage["surging_keywords_score"].append(result["surging_keywords_score"])
         score_usage["consistent_growth"].append(1 if result["consistent_growth"] == "Yes" else 0)
         score_usage["sustained_volume_growth"].append(1 if result["sustained_volume_growth"] == "Yes" else 0)
-        print(result["fear_and_greed_index"])
+
         try:
             fear_greed_value = int(result["fear_and_greed_index"])
             score_usage["fear_and_greed_index"].append(
@@ -124,10 +124,14 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         except (ValueError, TypeError, KeyError) as e:
             logging.debug(f"Failed to process fear_and_greed_index: {e}")
             score_usage["fear_and_greed_index"].append(0)
+
         score_usage["event_score"].append(1 if result["events"] > 0 else 0)
         score_usage["digest_score"].append(result["news_digest_score"])
         score_usage["trending_score"].append(result["trending_score"])
         score_usage["santiment_score"].append(result["santiment_score"])
+        score_usage["santiment_surge_score"].append(result["santiment_surge_score"])
+        score_usage["consistent_monthly_growth"].append(1 if result.get("consistent_monthly_growth", "No") == "Yes" else 0)
+        score_usage["trend_conflict"].append(1 if result.get("trend_conflict", "No") == "Yes" else 0)
         score_usage["cumulative_score"].append(result["cumulative_score"])
         score_usage["cumulative_score_percentage"].append(result["cumulative_score_percentage"])
 
