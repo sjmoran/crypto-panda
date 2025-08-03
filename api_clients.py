@@ -126,7 +126,7 @@ def fetch_santiment_data_for_coin(coin_slug):
             "daily_active_addresses_increase": safe_fetch('active_addresses_24h_change_30d'),
             "exchange_inflow_usd": safe_fetch('exchange_inflow_usd'),
             "exchange_outflow_usd": safe_fetch('exchange_outflow_usd'),
-            "whale_transaction_count_100k_usd_to_inf": safe_fetch('whale_transaction_count_100k_usd_to_inf_1d'),
+            "whale_transaction_count_100k_usd_to_inf": safe_fetch('whale_transaction_count_100k_usd_to_inf'),
             "transaction_volume_usd_change_1d": safe_fetch('transaction_volume_usd_change_1d'),
             "sentiment_weighted_total": safe_fetch('sentiment_weighted_total_1d'),
         }
