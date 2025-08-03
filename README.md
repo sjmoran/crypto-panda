@@ -44,6 +44,31 @@ Powered by Python, OpenAI's GPT-4o, Santiment, and CoinPaprika APIs — it's des
 
 ---
 
+## 📊 Supported Metrics in the Crypto Analysis Pipeline
+
+| **Metric Name**               | **Score Range** | **Purpose / Description** |
+|------------------------------|-----------------|----------------------------|
+| `price_change_score`         | 0–3             | Assesses short-, medium-, and long-term price momentum relative to market cap and volatility thresholds. |
+| `volume_change_score`        | 0–3             | Detects surges in trading volume over multiple periods, adjusted for market cap and volatility. |
+| `tweet_score`                | 0–1             | Indicates whether there was any Twitter data retrieved for the coin (1 = present). |
+| `sentiment_score`            | 0–1             | Evaluates average sentiment from news using VADER; returns 1 if sentiment is highly positive. |
+| `surging_keywords_score`     | 0–1             | Scores presence of bullish phrases in news articles using fuzzy matching with a surge keyword list. |
+| `consistent_growth_score`    | 0–1             | True if price rose on at least 4 of the last 7 days, signaling short-term bullish behavior. |
+| `sustained_volume_growth`    | 0–1             | True if volume increased on at least 4 of the last 7 days, showing consistent demand. |
+| `fear_and_greed_score`       | 0–1             | Based on the Alternative.me Fear & Greed Index; returns 1 if index exceeds a defined threshold. |
+| `event_score`                | 0–1             | 1 if any significant recent events (within past 7 days) are associated with the coin. |
+| `digest_score`               | 0–1             | Indicates whether the coin appears in the curated Sundown Digest list. |
+| `trending_score`             | 0–2             | Uses fuzzy string matching to detect if the coin is trending in external APIs (e.g., CoinPaprika). |
+| `santiment_score`            | 0–2             | Based on binary thresholds from Santiment metrics such as dev activity and daily active addresses. |
+| `santiment_surge_score`      | 0–6             | Aggregates surge signals from Santiment metrics like net exchange flow, whale tx count, sentiment. |
+| `consistent_monthly_growth`  | 0–1             | Checks for 18+ positive price change days in the past 30, signaling strong longer-term accumulation. |
+| `trend_conflict_score`       | 0–1             | True if there's strong monthly growth without recent short-term confirmation — possible breakout signal. |
+| `liquidity_risk`             | "Low"/"Medium"/"High" | Categorizes trading risk based on volume relative to market cap class. |
+| `cumulative_score`           | 0–22            | Total score based on all signals above. Used to rank coins. |
+| `cumulative_score_percentage`| 0–100%          | Normalized version of `cumulative_score` as a percentage of `MAX_POSSIBLE_SCORE`. |
+
+---
+
 ## 📬 Example Report
 
 Each weekly email includes top-ranked coins and GPT-generated insights:
