@@ -115,6 +115,7 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         score_usage["surging_keywords_score"].append(result["surging_keywords_score"])
         score_usage["consistent_growth"].append(1 if result["consistent_growth"] == "Yes" else 0)
         score_usage["sustained_volume_growth"].append(1 if result["sustained_volume_growth"] == "Yes" else 0)
+        print(result["fear_and_greed_index"])
         try:
             fear_greed_value = int(result["fear_and_greed_index"])
             score_usage["fear_and_greed_index"].append(
@@ -173,7 +174,6 @@ def summarize_scores(score_usage, output_dir="../logs/"):
             )
             print(summary)
             f.write(summary)
-            print("Fear and Greed index raw values:", score_usage["fear_and_greed_index"])
 
             # Save histogram
             plt.figure()
