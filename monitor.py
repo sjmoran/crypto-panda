@@ -291,6 +291,7 @@ def monitor_coins_and_send_report():
         report_entries = [r for r in tqdm(futures, total=len(coins_to_monitor), desc="Processing Coins") if r is not None]
 
     df = pd.DataFrame(report_entries)
+    raw_df = df.copy()
 
     try:
         if not df.empty:
@@ -348,18 +349,26 @@ def monitor_coins_and_send_report():
             
             summarize_scores(score_usage, output_dir=LOG_DIR)
 
+            raw_coin_ids = set(raw_df["coin_id"])
+            final_coin_ids = set(df["coin_id"])
+            already_processed_ids = set(existing_results["coin_id"]) if not existing_results.empty else set()
+
             for entry in coin_audit_log:
-                match = df[df["coin_id"] == entry["coin_id"]]
-                if not match.empty:
+                cid = entry["coin_id"]
+
+                if cid in final_coin_ids:
                     entry["included_in_report"] = True
                     entry["reason_for_exclusion"] = None
+                elif cid in raw_coin_ids:
+                    entry["included_in_report"] = False
+                    entry["reason_for_exclusion"] = "Filtered due to low score or liquidity"
+                elif cid in already_processed_ids:
+                    entry["included_in_report"] = False
+                    entry["reason_for_exclusion"] = "Skipped (already processed)"
                 else:
                     entry["included_in_report"] = False
-                    if any(r['coin_id'] == entry['coin_id'] for r in report_entries):
-                        entry["reason_for_exclusion"] = "Filtered due to low score or liquidity"
-                    else:
-                        entry["reason_for_exclusion"] = "Processing failed or already processed"
-                        
+                    entry["reason_for_exclusion"] = "Processing failed"
+
             audit_log_file = os.path.join(LOG_DIR, f"audit_log_{datetime.now().strftime('%Y-%m-%d')}.json")
             with open(audit_log_file, "w") as f:
                 import json
