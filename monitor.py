@@ -50,6 +50,8 @@ from coinpaprika import client as Coinpaprika
 
 client = Coinpaprika.Client(api_key=COIN_PAPRIKA_API_KEY)
 
+coin_audit_log = []
+
 # Set up logging configuration
 logging.basicConfig(
     level=logging.DEBUG,
@@ -62,7 +64,7 @@ logging.basicConfig(
 
 logging.debug("Logging is set up and the application has started.")
 
-def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date, score_usage):
+def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date, score_usage, coin_audit_log):
     """
     Processes a single coin, performing the following steps:
 
@@ -137,6 +139,34 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
 
         save_result_to_csv(result)
         save_cumulative_score_to_aurora(result['coin_id'], result['coin_name'], result['cumulative_score_percentage'])
+
+        audit_entry = {
+            "coin_id": coin_id,
+            "coin_name": coin_name,
+            "ticker": coins_dict.get(coin_name),
+            "date": datetime.now().isoformat(),
+            "included_in_report": None,  # Set later
+            "reason_for_exclusion": None,
+            "scores": {
+                "price_change_score": result["price_change_score"],
+                "volume_change_score": result["volume_change_score"],
+                "sentiment_score": result["sentiment_score"],
+                "surging_keywords_score": result["surging_keywords_score"],
+                "fear_and_greed_index": result.get("fear_and_greed_index", None),
+                "event_score": result["events"],
+                "digest_score": result["news_digest_score"],
+                "trending_score": result["trending_score"],
+                "santiment_score": result["santiment_score"],
+                "santiment_surge_score": result["santiment_surge_score"],
+                "consistent_monthly_growth": result.get("consistent_monthly_growth"),
+                "trend_conflict": result.get("trend_conflict"),
+                "cumulative_score": result["cumulative_score"],
+                "cumulative_score_percentage": result["cumulative_score_percentage"],
+                "liquidity_risk": result.get("liquidity_risk", "Unknown")
+            }
+        }
+
+        coin_audit_log.append(audit_entry)
 
         return result
 
@@ -316,6 +346,26 @@ def monitor_coins_and_send_report():
                     logging.debug(f"Failed to delete {results_file}: {e}")
             
             summarize_scores(score_usage, output_dir=LOG_DIR)
+
+            for entry in coin_audit_log:
+                match = df[df["coin_id"] == entry["coin_id"]]
+                if not match.empty:
+                    entry["included_in_report"] = True
+                    entry["reason_for_exclusion"] = None
+                else:
+                    entry["included_in_report"] = False
+                    if any(r['coin_id'] == entry['coin_id'] for r in report_entries):
+                        entry["reason_for_exclusion"] = "Filtered due to low score or liquidity"
+                    else:
+                        entry["reason_for_exclusion"] = "Processing failed or already processed"
+                        
+            audit_log_file = os.path.join(LOG_DIR, f"audit_log_{datetime.now().strftime('%Y-%m-%d')}.json")
+            with open(audit_log_file, "w") as f:
+                import json
+                json.dump(coin_audit_log, f, indent=2)
+
+            audit_df = pd.json_normalize(coin_audit_log)
+            audit_df.to_csv(os.path.join(LOG_DIR, f"audit_log_{datetime.now().strftime('%Y-%m-%d')}.csv"), index=False)
 
         else:
             logging.debug("No valid entries to report. DataFrame is empty.")
