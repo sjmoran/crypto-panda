@@ -126,7 +126,7 @@ pip install -r requirements.txt
 python monitor.py
 ```
 
-> 💡 Run weekly via cron, Lambda, or EventBridge.
+> 💡 Run via cron, Lambda, or EventBridge.
 
 ---
 
@@ -167,7 +167,7 @@ Deploy cheaply on AWS using:
 - Lambda + EventBridge for scheduling
 - CloudFormation for VPC and IAM setup
 
-> Runtime (1000 coins): ~20 hours  
+> Runtime (1000 coins): ~a few hours  
 > API Costs (monthly): ~$100 with paid tiers
 
 ---
