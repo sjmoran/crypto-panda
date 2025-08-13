@@ -13,7 +13,7 @@
 
 ## 🔍 What is Crypto-Panda?
 
-**Crypto-Panda** is a smart, automated reporting tool that tracks the cryptocurrency market, analyzes patterns using both quantitative signals and AI, and emails you a weekly report on the coins worth watching.
+**Crypto-Panda** is a smart, automated reporting tool that tracks the cryptocurrency market, analyzes patterns using both quantitative signals and AI, and emails you a  report on the coins worth watching. It's fast, scanning thousands of coins and producing a detailed report within day.
 
 Powered by Python, OpenAI's GPT-4o, Santiment, and CoinPaprika APIs — it's designed to help you cut through the noise and make sense of the chaos.
 
@@ -126,7 +126,7 @@ pip install -r requirements.txt
 python monitor.py
 ```
 
-> 💡 Run weekly via cron, Lambda, or EventBridge.
+> 💡 Run via cron, Lambda, or EventBridge.
 
 ---
 
@@ -167,7 +167,7 @@ Deploy cheaply on AWS using:
 - Lambda + EventBridge for scheduling
 - CloudFormation for VPC and IAM setup
 
-> Runtime (1000 coins): ~20 hours  
+> Runtime (1000 coins): ~a few hours  
 > API Costs (monthly): ~$100 with paid tiers
 
 ---
