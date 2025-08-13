@@ -13,7 +13,7 @@
 
 ## 🔍 What is Crypto-Panda?
 
-**Crypto-Panda** is a smart, automated reporting tool that tracks the cryptocurrency market, analyzes patterns using both quantitative signals and AI, and emails you a  report on the coins worth watching. It's fast, scanning thousands of coins and producing a report within day.
+**Crypto-Panda** is a smart, automated reporting tool that tracks the cryptocurrency market, analyzes patterns using both quantitative signals and AI, and emails you a  report on the coins worth watching. It's fast, scanning thousands of coins and producing a detailed report within day.
 
 Powered by Python, OpenAI's GPT-4o, Santiment, and CoinPaprika APIs — it's designed to help you cut through the noise and make sense of the chaos.
 
