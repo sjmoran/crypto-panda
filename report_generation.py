@@ -99,8 +99,11 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
         for item in sorted_recommendations:
 
             # Match the coin with report entries to fetch URL, cumulative score percentage
-            matching_entry = next((entry for entry in report_entries if entry["coin_name"].lower() == item["coin"].lower()), None)
-            
+            matching_entry = next(
+                (e for e in report_entries
+                if (e.get("coin_name","").strip().lower() == item.get("coin","").strip().lower())),
+                None
+            )
             # CoinPaprika URL format or other URL source can be used here
             coin_url = f"https://coinpaprika.com/coin/{matching_entry['coin_id']}/" if matching_entry else '#'
             cumulative_score_percentage = matching_entry.get('cumulative_score_percentage', 'N/A') if matching_entry else 'N/A'
