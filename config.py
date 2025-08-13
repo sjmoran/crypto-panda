@@ -57,6 +57,7 @@ SMTP_SERVER = os.getenv('SMTP_SERVER')         # SMTP server address (e.g., smtp
 SMTP_USERNAME = os.getenv('SMTP_USERNAME')     # SMTP login username
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')     # SMTP login password
 SMTP_PORT = 587                                # SMTP port (587 is standard for TLS)
+MAX_POSSIBLE_SCORE = 22 # Number of possible analysis scores
 
 # File paths used in the analysis pipeline
 RESULTS_FILE = LOG_DIR + "/surging_coins.csv"          # Where analysis results are saved

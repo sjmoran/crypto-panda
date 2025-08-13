@@ -1,16 +1,14 @@
 import pandas as pd
 import math
 import logging
-from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz, process
 from helpers import calculate_price_change, calculate_volume_change
 from config import (  # Importing relevant constants from the config file
     HIGH_VOLATILITY_THRESHOLD, MEDIUM_VOLATILITY_THRESHOLD,
-    surge_words, FEAR_GREED_THRESHOLD,LOW_VOLUME_THRESHOLD_LARGE, LOW_VOLUME_THRESHOLD_MID, LOW_VOLUME_THRESHOLD_SMALL, analyzer
+    MAX_POSSIBLE_SCORE, surge_words, FEAR_GREED_THRESHOLD,LOW_VOLUME_THRESHOLD_LARGE, LOW_VOLUME_THRESHOLD_MID, LOW_VOLUME_THRESHOLD_SMALL, analyzer
 )
 from datetime import datetime, timedelta
 from api_clients import client, api_call_with_retries,fetch_historical_ticker_data,fetch_santiment_data_for_coin,fetch_twitter_data,fetch_fear_and_greed_index
-
-MAX_POSSIBLE_SCORE = 22 # Number of possible analysis scores
 import re
 
 def analyze_volume_change(volume_data, market_cap, volatility):
@@ -373,6 +371,7 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
     explanation += f"Cumulative Surge Score: {cumulative_score} ({cumulative_score_percentage:.2f}%)"
     explanation += f"Consistent Monthly Growth: {'Yes' if consistent_monthly_growth_score else 'No'}, "
     explanation += f"Trend Conflict: {'Yes' if trend_conflict_score else 'No'} (Monthly growth without short-term support), "
+    
     if trend_conflict_score:
         explanation += "⚠️ Potential breakout opportunity: consistent monthly growth detected without short-term trend confirmation. "
     
@@ -412,9 +411,6 @@ def analyze_coin(coin_id, coin_name, end_date, news_df, digest_tickers, trending
         "coin_news": coin_news.to_dict('records') if not news_df.empty else [],
         "trend_conflict": "Yes" if trend_conflict_score else "No",
     }
-
-
-from fuzzywuzzy import process
 
 def match_coins_with_santiment(coin_name, santiment_slugs_df, threshold=90):
     """

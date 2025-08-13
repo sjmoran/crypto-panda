@@ -96,14 +96,24 @@ def generate_html_report_with_recommendations(report_entries, digest_summary, gp
         )
 
         recommendation_items = ''
-        for item in sorted_recommendations:
 
-            # Match the coin with report entries to fetch URL, cumulative score percentage
+        for item in sorted_recommendations:
             matching_entry = next(
-                (e for e in report_entries
-                if (e.get("coin_name","").strip().lower() == item.get("coin","").strip().lower())),
+                (
+                    e for e in report_entries
+                    if re.sub(r'\s+', ' ', e.get("coin_name", "")).strip().lower()
+                    ==
+                    re.sub(r'\s+', ' ', item.get("coin", "")).strip().lower()
+                ),
                 None
             )
+
+            if not matching_entry:
+                logging.debug(
+                    f"No matching entry for GPT coin '{item.get('coin')}'. "
+                    f"Available coins: {[e.get('coin_name') for e in report_entries[:10]]}"
+                )
+                
             # CoinPaprika URL format or other URL source can be used here
             coin_url = f"https://coinpaprika.com/coin/{matching_entry['coin_id']}/" if matching_entry else '#'
             cumulative_score_percentage = matching_entry.get('cumulative_score_percentage', 'N/A') if matching_entry else 'N/A'
