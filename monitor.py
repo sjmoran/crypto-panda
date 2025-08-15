@@ -8,12 +8,12 @@ from tqdm import tqdm
 import traceback
 from collections import defaultdict
 import matplotlib.pyplot as plt
-import seaborn as sns
+import seaborn as sns  # kept for heatmap
 import matplotlib.pyplot as plt
 
 from api_clients import (
     get_sundown_digest,
-    fetch_trending_coins_scores,
+    fetch_trending_coins_scores,   
     fetch_news_for_past_week,
     fetch_santiment_slugs,
     client,
@@ -42,7 +42,7 @@ from config import (
     NUMBER_OF_TOP_COINS_TO_MONITOR,
     CRYPTO_NEWS_TICKERS,
     LOG_DIR,
-    COIN_PAPRIKA_API_KEY,FEAR_GREED_THRESHOLD
+    COIN_PAPRIKA_API_KEY, FEAR_GREED_THRESHOLD
 )
 from helpers import (filter_active_and_ranked_coins)
 
@@ -66,26 +66,7 @@ logging.debug("Logging is set up and the application has started.")
 
 def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, trending_coins_scores, santiment_slugs_df, end_date, score_usage, coin_audit_log):
     """
-    Processes a single coin, performing the following steps:
-
-    1. Skips coins that have already been processed in the past week.
-    2. Fetches news articles for the coin for the past week.
-    3. Analyzes the coin using the analyze_coin function.
-    4. Saves the result to the CSV file.
-    5. Saves the cumulative score to Aurora.
-    6. Returns the result.
-
-    Parameters:
-        coin (dict): The coin to process, with keys 'id' and 'name'.
-        existing_results (pd.DataFrame): The existing results for the past week.
-        tickers_dict (dict): A dictionary mapping coin names to their corresponding tickers.
-        digest_tickers (list): A list of tickers extracted from the Sundown Digest.
-        trending_coins_scores (dict): A dictionary with tickers as keys and their respective scores.
-        santiment_slugs_df (pd.DataFrame): DataFrame containing Santiment slugs for various coins.
-        end_date (str): The end date of the period for which to fetch the historical ticker data (in YYYY-MM-DD format).
-
-    Returns:
-        dict: The result of the analysis, with keys 'coin_id', 'coin_name', 'cumulative_score_percentage', and 'explanation'.
+    Processes a single coin and records scoring usage + audit details.
     """
     try:
         coin_id = coin['id']
@@ -106,20 +87,21 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
             end_date,
             news_df,
             digest_tickers,
-            trending_coins_scores,
+            trending_coins_scores,   # <- safe to be {} now
             santiment_slugs_df
         )
-        
-        score_usage["price_change_score"].append(int(result["price_change_score"]))
-        score_usage["volume_change_score"].append(int(result["volume_change_score"]))
-        score_usage["tweet_score"].append(1 if result["tweets"] != "None" else 0)
-        score_usage["sentiment_score"].append(result["sentiment_score"])
-        score_usage["surging_keywords_score"].append(result["surging_keywords_score"])
-        score_usage["consistent_growth"].append(1 if result["consistent_growth"] == "Yes" else 0)
-        score_usage["sustained_volume_growth"].append(1 if result["sustained_volume_growth"] == "Yes" else 0)
+
+        # Score usage tracking (defensive conversions)
+        score_usage["price_change_score"].append(int(result.get("price_change_score", 0) or 0))
+        score_usage["volume_change_score"].append(int(result.get("volume_change_score", 0) or 0))
+        score_usage["tweet_score"].append(1 if result.get("tweets") not in (None, "None") else 0)
+        score_usage["sentiment_score"].append(result.get("sentiment_score", 0) or 0)
+        score_usage["surging_keywords_score"].append(result.get("surging_keywords_score", 0) or 0)
+        score_usage["consistent_growth"].append(1 if result.get("consistent_growth", "No") == "Yes" else 0)
+        score_usage["sustained_volume_growth"].append(1 if result.get("sustained_volume_growth", "No") == "Yes" else 0)
 
         try:
-            fear_greed_value = int(result["fear_and_greed_index"])
+            fear_greed_value = int(result.get("fear_and_greed_index", 0) or 0)
             score_usage["fear_and_greed_index"].append(
                 1 if fear_greed_value > FEAR_GREED_THRESHOLD else 0
             )
@@ -127,19 +109,21 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
             logging.debug(f"Failed to process fear_and_greed_index: {e}")
             score_usage["fear_and_greed_index"].append(0)
 
-        score_usage["event_score"].append(1 if result["events"] > 0 else 0)
-        score_usage["digest_score"].append(result["news_digest_score"])
-        score_usage["trending_score"].append(result["trending_score"])
-        score_usage["santiment_score"].append(result["santiment_score"])
-        score_usage["santiment_surge_score"].append(result["santiment_surge_score"])
+        score_usage["event_score"].append(1 if (result.get("events", 0) or 0) > 0 else 0)
+        score_usage["digest_score"].append(result.get("news_digest_score", 0) or 0)
+        score_usage["trending_score"].append(result.get("trending_score", 0) or 0)
+        score_usage["santiment_score"].append(result.get("santiment_score", 0) or 0)
+        score_usage["santiment_surge_score"].append(result.get("santiment_surge_score", 0) or 0)
         score_usage["consistent_monthly_growth"].append(1 if result.get("consistent_monthly_growth", "No") == "Yes" else 0)
         score_usage["trend_conflict"].append(1 if result.get("trend_conflict", "No") == "Yes" else 0)
-        score_usage["cumulative_score"].append(result["cumulative_score"])
-        score_usage["cumulative_score_percentage"].append(result["cumulative_score_percentage"])
+        score_usage["cumulative_score"].append(result.get("cumulative_score", 0) or 0)
+        score_usage["cumulative_score_percentage"].append(result.get("cumulative_score_percentage", 0) or 0)
 
+        # Persist
         save_result_to_csv(result)
         save_cumulative_score_to_aurora(result['coin_id'], result['coin_name'], result['cumulative_score_percentage'])
 
+        # Audit
         audit_entry = {
             "coin_id": coin_id,
             "coin_name": coin_name,
@@ -148,20 +132,20 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
             "included_in_report": None,  # Set later
             "reason_for_exclusion": None,
             "scores": {
-                "price_change_score": result["price_change_score"],
-                "volume_change_score": result["volume_change_score"],
-                "sentiment_score": result["sentiment_score"],
-                "surging_keywords_score": result["surging_keywords_score"],
-                "fear_and_greed_index": result.get("fear_and_greed_index", None),
-                "event_score": result["events"],
-                "digest_score": result["news_digest_score"],
-                "trending_score": result["trending_score"],
-                "santiment_score": result["santiment_score"],
-                "santiment_surge_score": result["santiment_surge_score"],
+                "price_change_score": result.get("price_change_score"),
+                "volume_change_score": result.get("volume_change_score"),
+                "sentiment_score": result.get("sentiment_score"),
+                "surging_keywords_score": result.get("surging_keywords_score"),
+                "fear_and_greed_index": result.get("fear_and_greed_index"),
+                "event_score": result.get("events"),
+                "digest_score": result.get("news_digest_score"),
+                "trending_score": result.get("trending_score"),
+                "santiment_score": result.get("santiment_score"),
+                "santiment_surge_score": result.get("santiment_surge_score"),
                 "consistent_monthly_growth": result.get("consistent_monthly_growth"),
                 "trend_conflict": result.get("trend_conflict"),
-                "cumulative_score": result["cumulative_score"],
-                "cumulative_score_percentage": result["cumulative_score_percentage"],
+                "cumulative_score": result.get("cumulative_score"),
+                "cumulative_score_percentage": result.get("cumulative_score_percentage"),
                 "liquidity_risk": result.get("liquidity_risk", "Unknown")
             }
         }
@@ -171,33 +155,22 @@ def process_single_coin(coin, existing_results, tickers_dict, digest_tickers, tr
         return result
 
     except Exception as e:
-        logging.debug(f"Error processing {coin['name']} ({coin['id']}): {e}")
+        logging.debug(f"Error processing {coin.get('name')} ({coin.get('id')}): {e}")
         logging.debug(traceback.format_exc())
         return None
 
 
 def summarize_scores(score_usage, output_dir="../logs/"):
     """
-    Generates a summary and histogram plot for each type of score in the given score usage dictionary.
-
-    Parameters:
-        score_usage (dict): A dictionary where keys represent different types of scores and values
-                            are lists of score values.
-        output_dir (str): Directory to save summary and plots.
-
-    Saves:
-        - A summary text file: score_summary.txt
-        - Histogram plots for each score
-        - A correlation heatmap of the scores
+    Generates a summary + histograms + correlation heatmap for score_usage.
     """
-
     os.makedirs(output_dir, exist_ok=True)
     summary_file = os.path.join(output_dir, "score_summary.txt")
 
     with open(summary_file, "w") as f:
         f.write("--- SCORING SUMMARY ---\n\n")
         for score_type, scores in score_usage.items():
-            s = pd.Series(scores)
+            s = pd.Series(scores, dtype="float")
             summary = (
                 f"{score_type}:\n"
                 f"  Count: {len(s)}\n"
@@ -220,32 +193,23 @@ def summarize_scores(score_usage, output_dir="../logs/"):
             plt.savefig(os.path.join(output_dir, f"{score_type}_histogram.png"))
             plt.close()
 
-    # Correlation heatmap
+    # Correlation heatmap (skip if not enough data)
     df_scores = pd.DataFrame(score_usage)
-    corr = df_scores.corr()
+    if df_scores.shape[0] >= 2 and df_scores.shape[1] >= 2:
+        corr = df_scores.corr(numeric_only=True)
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
+        plt.title("Correlation between scoring components")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "score_correlation_heatmap.png"))
+        plt.close()
+    else:
+        logging.debug("Not enough data to compute correlation heatmap.")
 
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f")
-    plt.title("Correlation between scoring components")
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "score_correlation_heatmap.png"))
-    plt.close()
 
 def monitor_coins_and_send_report():
     """
     Main entry point for monitoring coins and generating a weekly report.
-
-    The following steps are taken in this function:
-
-    1. Create the coin data table in Aurora if it does not exist.
-    2. Load existing results from the previous week.
-    3. Retrieve a list of active and ranked coins from CoinPaprika.
-    4. Process each coin in parallel using the `process_single_coin` function.
-    5. Filter the results to only include coins with a cumulative score greater than the threshold.
-    6. Plot the top coins over time using the historical data.
-    7. Generate an HTML report with the results and send it via email.
-
-    :return: None
     """
     create_coin_data_table_if_not_exists()
 
@@ -265,13 +229,22 @@ def monitor_coins_and_send_report():
     end_date = datetime.now().strftime('%Y-%m-%d')
 
     tickers_dict = load_tickers(CRYPTO_NEWS_TICKERS)
+
+    # Sundown digest (robust inside helper)
     sundown_digest = get_sundown_digest()
     digest_summary = summarize_sundown_digest(sundown_digest)
-    digest_tickers = digest_summary['tickers']
+    digest_tickers = digest_summary.get('tickers', [])
+    logging.debug(f"Sundown digest tickers extracted: {len(digest_tickers)}")
+
+    # Trending coins (defensive function now; may return {})
     trending_coins_scores = fetch_trending_coins_scores()
+    if not trending_coins_scores:
+        logging.debug("Trending coins scores unavailable or empty; continuing without trending influence.")
+
+    # Santiment slugs (already robust)
     santiment_slugs_df = fetch_santiment_slugs()
 
-    score_usage = defaultdict(list)  # <-- Add here
+    score_usage = defaultdict(list)
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = executor.map(
@@ -280,7 +253,7 @@ def monitor_coins_and_send_report():
                 existing_results,
                 tickers_dict,
                 digest_tickers,
-                trending_coins_scores,
+                trending_coins_scores,   # may be {}
                 santiment_slugs_df,
                 end_date,
                 score_usage,
@@ -288,9 +261,14 @@ def monitor_coins_and_send_report():
             ),
             coins_to_monitor
         )
-        report_entries = [r for r in tqdm(futures, total=len(coins_to_monitor), desc="Processing Coins") if r is not None]
+        results_list = [r for r in tqdm(futures, total=len(coins_to_monitor), desc="Processing Coins") if r is not None]
 
-    df = pd.DataFrame(report_entries)
+    if not results_list:
+        logging.debug("No coin results produced; exiting after score summary.")
+        summarize_scores(score_usage, output_dir=LOG_DIR)
+        return
+
+    df = pd.DataFrame(results_list)
     raw_df = df.copy()
 
     try:
@@ -309,8 +287,8 @@ def monitor_coins_and_send_report():
 
             report_entries = df.to_dict('records')
             report_entries = sorted(report_entries, key=lambda x: x.get('cumulative_score', 0), reverse=True)
-            logging.debug(f"Report entries after sorting: {report_entries}")
-            
+            logging.debug(f"Report entries after sorting: {len(report_entries)} entries")
+
             # Ensure numeric fields are correctly typed
             numeric_fields = [
                 "price_change_score", "volume_change_score", "sentiment_score",
@@ -318,7 +296,6 @@ def monitor_coins_and_send_report():
                 "santiment_score", "cumulative_score", "cumulative_score_percentage",
                 "fear_and_greed_index", "market_cap", "volume_24h", "events"
             ]
-
             for field in numeric_fields:
                 if field in df.columns:
                     df[field] = pd.to_numeric(df[field], errors='coerce')
@@ -326,7 +303,7 @@ def monitor_coins_and_send_report():
             logging.debug("DataFrame contents before GPT-4o recommendations:\n%s", df.to_string())
 
             gpt_recommendations = gpt4o_summarize_each_coin(df)
-            logging.debug(f"GPT-4o recommendations: {gpt_recommendations}")
+            logging.debug("GPT-4o recommendations generated.")
 
             html_report = generate_html_report_with_recommendations(report_entries, digest_summary, gpt_recommendations)
             logging.debug("HTML report generated successfully.")
@@ -346,16 +323,16 @@ def monitor_coins_and_send_report():
                     logging.debug(f"{results_file} has been deleted successfully.")
                 except Exception as e:
                     logging.debug(f"Failed to delete {results_file}: {e}")
-            
+
             summarize_scores(score_usage, output_dir=LOG_DIR)
 
+            # Build audit flags
             raw_coin_ids = set(raw_df["coin_id"])
             final_coin_ids = set(df["coin_id"])
             already_processed_ids = set(existing_results["coin_id"]) if not existing_results.empty else set()
 
             for entry in coin_audit_log:
                 cid = entry["coin_id"]
-
                 if cid in final_coin_ids:
                     entry["included_in_report"] = True
                     entry["reason_for_exclusion"] = None
@@ -379,6 +356,8 @@ def monitor_coins_and_send_report():
 
         else:
             logging.debug("No valid entries to report. DataFrame is empty.")
+            summarize_scores(score_usage, output_dir=LOG_DIR)
+
     except Exception as e:
         logging.error(f"An error occurred during the report generation process: {e}")
 

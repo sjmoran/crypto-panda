@@ -283,37 +283,96 @@ def fetch_santiment_metric(metric, coin_slug, start_date, end_date):
 
 def fetch_trending_coins_scores():
     """
-    Fetches trending coins from CryptoNews API and calculates their sentiment scores.
-    Normalizes the scores between 0 and 3 and returns a dictionary with the trending coins and their normalized scores.
-
-    Returns:
-        dict: A dictionary with the trending coins as keys and their normalized scores as values.
+    Fetch trending coins from CryptoNews API (last 7 days) and compute a normalized score in [0, 3].
+    Returns {} on any error or if no valid data is available.
     """
-    url = f"https://cryptonews-api.com/api/v1/top-mention?&date=last7days&token={os.getenv('CRYPTO_NEWS_API_KEY')}"
-    response = requests.get(url)
-    trending_data = response.json()['data']['all']
+    api_key = os.getenv('CRYPTO_NEWS_API_KEY')
+    if not api_key:
+        logging.debug("CRYPTO_NEWS_API_KEY not set; skipping trending coins.")
+        return {}
 
-    trending_coins_scores = {}
-    raw_scores = {}
+    url = f"https://cryptonews-api.com/api/v1/top-mention?date=last7days&token={api_key}"
 
-    # Calculate raw scores
-    for item in trending_data:
-        ticker = item['ticker'].lower()
-        sentiment_score = item['sentiment_score']
-        total_mentions = item['total_mentions']
-        raw_score = sentiment_score * total_mentions
-        raw_scores[ticker] = raw_score
+    try:
+        # Make the request with a short timeout and retry wrapper
+        response = api_call_with_retries(requests.get, url, timeout=15)
+        status = response.status_code
+        text = response.text  # cache for logging in case JSON fails
+        logging.debug(f"Top-mention API status: {status}")
 
-    # Determine min and max raw scores for normalization
-    min_raw_score = min(raw_scores.values())
-    max_raw_score = max(raw_scores.values())
+        if status != 200:
+            logging.debug(f"Non-200 from top-mention. Body: {text[:500]}...")
+            return {}
 
-    # Normalize scores between 0 and 3
-    for ticker, raw_score in raw_scores.items():
-        trending_coins_scores[ticker] = normalize_score(raw_score, min_raw_score, max_raw_score)
+        # Parse JSON safely
+        try:
+            payload = response.json()
+        except Exception as je:
+            logging.debug(f"Failed to parse JSON from top-mention: {je}. Body: {text[:500]}...")
+            return {}
 
-    return trending_coins_scores
+        # Common error patterns: {"message": "..."} or {"error": "..."}
+        if isinstance(payload, dict) and any(k in payload for k in ("message", "error")):
+            logging.debug(f"Top-mention returned error payload: {payload}")
+            return {}
 
+        # Possible schemas:
+        # 1) {"data": {"all": [ ...items... ]}}
+        # 2) {"data": [ ...items... ]}
+        # 3) {"all": [ ...items... ]}
+        # 4) [ ...items... ]
+        trending_data = []
+        if isinstance(payload, dict):
+            if "data" in payload and isinstance(payload["data"], dict) and "all" in payload["data"]:
+                trending_data = payload["data"]["all"]
+            elif "data" in payload and isinstance(payload["data"], list):
+                trending_data = payload["data"]
+            elif "all" in payload and isinstance(payload["all"], list):
+                trending_data = payload["all"]
+        elif isinstance(payload, list):
+            trending_data = payload
+
+        if not trending_data:
+            logging.debug(f"No trending data available. Payload keys: {list(payload.keys()) if isinstance(payload, dict) else 'list'}")
+            return {}
+
+        raw_scores = {}
+        for item in trending_data:
+            # Be defensive about fields
+            ticker = str(item.get("ticker", "")).strip().lower()
+            if not ticker:
+                continue
+            # Some payloads use different sentiment keys; fall back to 0 if missing/invalid
+            try:
+                sentiment_score = float(item.get("sentiment_score", 0) or 0)
+                total_mentions = float(item.get("total_mentions", 0) or 0)
+            except (TypeError, ValueError):
+                sentiment_score, total_mentions = 0.0, 0.0
+
+            raw_score = sentiment_score * total_mentions
+            raw_scores[ticker] = raw_scores.get(ticker, 0.0) + raw_score  # in case duplicates exist
+
+        if not raw_scores:
+            logging.debug("Trending data parsed but no valid raw scores derived.")
+            return {}
+
+        # Normalize to [0, 3]
+        min_raw = min(raw_scores.values())
+        max_raw = max(raw_scores.values())
+
+        def normalize_score_safe(x, lo, hi):
+            if hi == lo:
+                return 1.5  # neutral mid if all equal
+            # your normalize_score likely already handles this; this is just extra safety
+            return 3.0 * (x - lo) / (hi - lo)
+
+        trending_coins_scores = {t: normalize_score_safe(s, min_raw, max_raw) for t, s in raw_scores.items()}
+        return trending_coins_scores
+
+    except Exception as e:
+        logging.debug(f"Exception in fetch_trending_coins_scores: {e}")
+        return {}
+    
 def fetch_fear_and_greed_index():
     """
     Fetches the current Fear and Greed Index value from the Alternative.me API.
